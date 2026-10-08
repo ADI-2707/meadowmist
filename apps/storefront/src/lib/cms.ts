@@ -57,3 +57,20 @@ export async function getFaqs() {
   }
 }
 
+export async function getTopReviews() {
+  try {
+    return await prisma.review.findMany({
+      where: { isApproved: true, rating: { gte: 4 } },
+      take: 6,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        product: { select: { name: true, slug: true, category: true } },
+        user: { select: { name: true } },
+      },
+    });
+  } catch {
+    return [];
+  }
+}
+
+

@@ -4,8 +4,9 @@ import FeaturedCategory from '@/components/FeaturedCategory/FeaturedCategory';
 import SectionReveal from '@/components/SectionReveal/SectionReveal';
 import HeroTrustStrip from '@/components/Hero/HeroTrustStrip';
 import BackToTop from '@/components/BackToTop/BackToTop';
+import { CollectorReviews } from '@/components/CollectorReviews/CollectorReviews';
 import { getFeaturedProducts } from '@/lib/getProducts';
-import { getStoreSettings } from '@/lib/cms';
+import { getStoreSettings, getTopReviews } from '@/lib/cms';
 import styles from './page.module.css';
 import type { Metadata } from 'next';
 
@@ -16,10 +17,11 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const [featuredCandles, featuredCeramics, storeSettings] = await Promise.all([
+  const [featuredCandles, featuredCeramics, storeSettings, topReviews] = await Promise.all([
     getFeaturedProducts(3, 'candle'),
     getFeaturedProducts(3, 'ceramic'),
     getStoreSettings(),
+    getTopReviews(),
   ]);
 
   return (
@@ -72,6 +74,10 @@ export default async function HomePage() {
           products={featuredCeramics}
         />
       </div>
+
+      <BrushDivider />
+
+      <CollectorReviews reviews={topReviews} />
 
       <BrushDivider />
 
