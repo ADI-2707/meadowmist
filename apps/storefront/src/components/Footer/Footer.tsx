@@ -50,10 +50,17 @@ export default function Footer() {
   } = useForm<NewsletterForm>({ resolver: zodResolver(newsletterSchema) });
 
   const onSubmit = async (data: NewsletterForm) => {
-
-    await new Promise((r) => setTimeout(r, 800));
-    console.log('Newsletter signup:', data.email);
-    reset();
+    try {
+      const res = await fetch('/api/newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        reset();
+      }
+    } catch {
+    }
   };
 
   return (
