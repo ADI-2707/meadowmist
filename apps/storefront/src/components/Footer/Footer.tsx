@@ -34,8 +34,8 @@ const NAV_SECTIONS = [
   {
     title: 'Help',
     links: [
+      { href: '/faq', label: 'Frequently Asked Questions' },
       { href: '/journal', label: 'Candle Care Guide' },
-      { href: '/journal', label: 'Gifting Guide' },
       { href: '/contact', label: 'Returns & Exchanges' },
     ],
   },

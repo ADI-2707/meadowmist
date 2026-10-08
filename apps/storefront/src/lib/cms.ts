@@ -45,3 +45,15 @@ export async function getStoreSettings() {
     return null;
   }
 }
+
+export async function getFaqs() {
+  try {
+    return await prisma.fAQ.findMany({
+      where: { isActive: true },
+      orderBy: { sortOrder: 'asc' },
+    });
+  } catch {
+    return [];
+  }
+}
+
