@@ -248,49 +248,27 @@ async function main() {
     },
   });
 
-  const allDbProducts = await prisma.product.findMany({ take: 6 });
-  if (allDbProducts.length > 0) {
-    const existingReviews = await prisma.review.count();
+  const allDbProducts = await prisma.product.findMany();
+  for (const product of allDbProducts) {
+    const existingReviews = await prisma.review.count({ where: { productId: product.id } });
     if (existingReviews === 0) {
-      const p1 = allDbProducts[0];
-      const p2 = allDbProducts[1] || allDbProducts[0];
-      const p3 = allDbProducts[2] || allDbProducts[0];
-
       await prisma.review.createMany({
         data: [
           {
-            productId: p1.id,
+            productId: product.id,
             userId: customer1.id,
             rating: 5,
-            title: 'Subtle fragrance, burns evenly for hours',
-            comment: 'The scent throw is gentle and natural without being overpowering. The soy wax melted completely flat with zero tunneling. Truly magnificent craftsmanship.',
+            title: `Exceptional quality and finish`,
+            comment: `The artisanal attention to detail in this ${product.name} is evident right out of the package. It elevates our living space completely.`,
             isVerifiedPurchase: true,
             isApproved: true,
           },
           {
-            productId: p1.id,
+            productId: product.id,
             userId: customer2.id,
             rating: 5,
-            title: 'Exquisite aesthetic on my coffee table',
-            comment: 'The ceramic glaze feels earthy and smooth. Guests consistently ask where I found this piece.',
-            isVerifiedPurchase: true,
-            isApproved: true,
-          },
-          {
-            productId: p2.id,
-            userId: customer1.id,
-            rating: 4,
-            title: 'Warm and comforting',
-            comment: 'Arrived beautifully packaged in plastic-free wrap. The flame is warm and flicker-free after trimming the wick.',
-            isVerifiedPurchase: true,
-            isApproved: true,
-          },
-          {
-            productId: p3.id,
-            userId: customer2.id,
-            rating: 5,
-            title: 'A true heirloom ceramic',
-            comment: 'The mineral pigments in the glaze give it depth in changing daylight. You can feel the wheel marks in the clay.',
+            title: `Pure handcrafted perfection`,
+            comment: `Delicate texture, exquisite presence, and arrived securely packed in biodegradable materials. Will definitely order again.`,
             isVerifiedPurchase: true,
             isApproved: true,
           },
@@ -350,6 +328,74 @@ async function main() {
     const existing = await prisma.journalArticle.findUnique({ where: { slug: a.slug } });
     if (!existing) {
       await prisma.journalArticle.create({ data: a });
+    }
+  }
+
+  const defaultFaqs = [
+    {
+      question: 'How do I care for my soy candle on the first burn?',
+      answer: 'Allow the melt pool to reach all outer edges before extinguishing. This initial burn creates a memory ring that prevents wax tunneling.',
+      category: 'Candle Care',
+      sortOrder: 1,
+    },
+    {
+      question: 'How should I trim the cotton wick?',
+      answer: 'Always trim the natural cotton wick to approximately 5mm prior to every lighting to ensure a soot-free, balanced flame.',
+      category: 'Candle Care',
+      sortOrder: 2,
+    },
+    {
+      question: 'Are the ceramics food safe and dishwasher friendly?',
+      answer: 'Our wheel-thrown stoneware ceramics are vitrified at 1220°C and glazed with non-toxic mineral glazes. Gentle hand washing is recommended to preserve luster.',
+      category: 'Ceramics',
+      sortOrder: 3,
+    },
+    {
+      question: 'What are your delivery timelines and shipping charges?',
+      answer: 'Orders are prepared in small batches and dispatched within 2 business days. Standard delivery is ₹99 across India, with complimentary shipping on orders over ₹1,499.',
+      category: 'Shipping & Delivery',
+      sortOrder: 4,
+    },
+    {
+      question: 'Do you offer bespoke gifting hampers and custom scents?',
+      answer: 'Yes, we curate custom gift boxes and wedding favors with personalized fragrance selections. Contact us through the studio enquiry form for bulk details.',
+      category: 'Custom Orders',
+      sortOrder: 5,
+    },
+  ];
+
+  for (const faq of defaultFaqs) {
+    const existingFaq = await prisma.fAQ.findFirst({ where: { question: faq.question } });
+    if (!existingFaq) {
+      await prisma.fAQ.create({ data: faq });
+    }
+  }
+
+  const defaultPromos = [
+    {
+      code: 'WELCOME10',
+      description: 'Welcome 10% off on your first handcrafted order',
+      discountType: 'PERCENTAGE',
+      discountValue: 10,
+      minOrderValue: 499,
+      maxDiscount: 250,
+      isActive: true,
+    },
+    {
+      code: 'MEADOW15',
+      description: 'Special 15% discount for artisanal connoisseurs',
+      discountType: 'PERCENTAGE',
+      discountValue: 15,
+      minOrderValue: 999,
+      maxDiscount: 500,
+      isActive: true,
+    },
+  ];
+
+  for (const p of defaultPromos) {
+    const existingPromo = await prisma.promotion.findUnique({ where: { code: p.code } });
+    if (!existingPromo) {
+      await prisma.promotion.create({ data: p });
     }
   }
 }
