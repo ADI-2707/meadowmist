@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { getProductBySlug, getRelatedProducts, getAllSlugs } from '@/lib/getProducts';
+import { getStoreSettings } from '@/lib/cms';
 import PriceTag from '@/components/PriceTag/PriceTag';
 import ScentBadge from '@/components/ScentBadge/ScentBadge';
 import FeaturedCategory from '@/components/FeaturedCategory/FeaturedCategory';
@@ -37,7 +38,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
-  const product = await getProductBySlug(slug);
+  const [product, settings] = await Promise.all([
+    getProductBySlug(slug),
+    getStoreSettings(),
+  ]);
   if (!product) notFound();
 
   const related = await getRelatedProducts(product.slug, product.category, 3);
@@ -114,9 +118,8 @@ export default async function ProductPage({ params }: Props) {
             <div className={styles.makingOf}>
               <p className={styles.makingOfLabel}>The making of</p>
               <p className={styles.makingOfText}>
-                Each piece is made in small batches — the variations in texture, glaze,
-                and finish are a feature, not a flaw. Your piece will be similar to
-                the photographs, and deliberately not identical.
+                {settings?.aboutArtisanNote ||
+                  'Each piece is made in small batches — the variations in texture, glaze, and finish are a feature, not a flaw. Your piece will be similar to the photographs, and deliberately not identical.'}
               </p>
             </div>
 
