@@ -290,3 +290,13 @@ model JournalArticle {
   @@index([category])
   @@index([isPublished])
 }
+
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
