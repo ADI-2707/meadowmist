@@ -155,7 +155,10 @@ export async function POST(request: Request) {
         }
       }
 
-      const shippingCharges = verifiedSubtotal >= 1499 ? 0 : 99;
+      const settings = tx.storeSettings ? await tx.storeSettings.findUnique({ where: { id: 'default' } }) : null;
+      const flatRate = settings?.shippingFlatRate ?? 99;
+      const freeThreshold = settings?.freeShippingThreshold ?? 1499;
+      const shippingCharges = verifiedSubtotal >= freeThreshold ? 0 : flatRate;
       const totalAmount = Math.max(0, verifiedSubtotal + shippingCharges - discount);
 
       const timestampSuffix = Date.now().toString().slice(-4);

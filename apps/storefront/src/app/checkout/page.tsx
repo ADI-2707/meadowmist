@@ -47,11 +47,25 @@ export default function CheckoutPage() {
 
   const [loading, setLoading] = useState(false);
   const [placingOrder, setPlacingOrder] = useState(false);
+  const [shippingRate, setShippingRate] = useState(99);
+  const [freeThreshold, setFreeThreshold] = useState(1499);
 
   const subtotal = items.reduce((sum, i) => sum + i.price * i.qty, 0);
-  const shippingCharges = subtotal >= 1499 || subtotal === 0 ? 0 : 99;
+  const shippingCharges = subtotal >= freeThreshold || subtotal === 0 ? 0 : shippingRate;
   const discountAmount = appliedPromo ? appliedPromo.discount : 0;
   const totalAmount = Math.max(0, subtotal + shippingCharges - discountAmount);
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.settings) {
+          setShippingRate(Number(data.settings.shippingFlatRate) || 99);
+          setFreeThreshold(Number(data.settings.freeShippingThreshold) || 1499);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const fetchAddresses = async () => {
