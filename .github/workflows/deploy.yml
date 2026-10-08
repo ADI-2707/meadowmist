@@ -1,0 +1,97 @@
+name: Continuous Deployment
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - '@meadowmist/storefront@*'
+      - '@meadowmist/seller@*'
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Application to deploy'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - storefront
+          - seller
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy-storefront:
+    name: Deploy Storefront App
+    if: |
+      github.event_name == 'workflow_dispatch' && (github.event.inputs.target == 'storefront' || github.event.inputs.target == 'all') ||
+      startsWith(github.ref, 'refs/tags/@meadowmist/storefront@') ||
+      (github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/'))
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: "file:./dev.db"
+      JWT_SECRET: "meadow-mist-ci-secure-jwt-secret-key-2026"
+      ADMIN_EMAIL: "admin@meadowmist.in"
+      ADMIN_PASSWORD: "AdminMeadowMist2026!"
+      ADMIN_NAME: "Meadow Mist Admin"
+      STORAGE_PROVIDER: "local"
+      NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+      NEXT_PUBLIC_STOREFRONT_URL: "http://localhost:3000"
+      NEXT_PUBLIC_SELLER_URL: "http://localhost:3001"
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npm run db:generate
+
+      - name: Build Storefront Application
+        run: npm run build:storefront
+
+  deploy-seller:
+    name: Deploy Seller Portal
+    if: |
+      github.event_name == 'workflow_dispatch' && (github.event.inputs.target == 'seller' || github.event.inputs.target == 'all') ||
+      startsWith(github.ref, 'refs/tags/@meadowmist/seller@') ||
+      (github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/'))
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: "file:./dev.db"
+      JWT_SECRET: "meadow-mist-ci-secure-jwt-secret-key-2026"
+      ADMIN_EMAIL: "admin@meadowmist.in"
+      ADMIN_PASSWORD: "AdminMeadowMist2026!"
+      ADMIN_NAME: "Meadow Mist Admin"
+      STORAGE_PROVIDER: "local"
+      NEXT_PUBLIC_APP_URL: "http://localhost:3000"
+      NEXT_PUBLIC_STOREFRONT_URL: "http://localhost:3000"
+      NEXT_PUBLIC_SELLER_URL: "http://localhost:3001"
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npm run db:generate
+
+      - name: Build Seller Portal
+        run: npm run build:seller
