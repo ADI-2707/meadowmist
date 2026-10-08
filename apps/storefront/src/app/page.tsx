@@ -6,7 +6,7 @@ import HeroTrustStrip from '@/components/Hero/HeroTrustStrip';
 import BackToTop from '@/components/BackToTop/BackToTop';
 import { CollectorReviews } from '@/components/CollectorReviews/CollectorReviews';
 import { getFeaturedProducts } from '@/lib/getProducts';
-import { getStoreSettings, getTopReviews } from '@/lib/cms';
+import { getStoreSettings, getTopReviews, getHeroSlides } from '@/lib/cms';
 import styles from './page.module.css';
 import type { Metadata } from 'next';
 
@@ -17,16 +17,17 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const [featuredCandles, featuredCeramics, storeSettings, topReviews] = await Promise.all([
+  const [featuredCandles, featuredCeramics, storeSettings, topReviews, heroSlides] = await Promise.all([
     getFeaturedProducts(3, 'candle'),
     getFeaturedProducts(3, 'ceramic'),
     getStoreSettings(),
     getTopReviews(),
+    getHeroSlides(),
   ]);
 
   return (
     <>
-      <Hero />
+      <Hero slides={heroSlides} />
 
       <BrushDivider />
 

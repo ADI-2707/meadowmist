@@ -1,12 +1,14 @@
 import React from 'react';
 import { CategoryStoryBubbles } from './CategoryStoryBubbles';
 import { HeroCarousel } from './HeroCarousel';
-import { getHeroSlides } from '@/lib/cms';
+import type { HeroSlide } from '@/data/heroData';
 import styles from './Hero.module.css';
 
-export default async function Hero() {
-  const slides = await getHeroSlides();
+interface HeroProps {
+  slides?: HeroSlide[];
+}
 
+export default function Hero({ slides }: HeroProps) {
   return (
     <header className={styles.hero} aria-label="Meadow Mist Collections and Highlights">
       <h1 className={styles.srOnly}>
@@ -17,4 +19,3 @@ export default async function Hero() {
     </header>
   );
 }
-
