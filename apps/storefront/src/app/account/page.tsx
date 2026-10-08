@@ -87,6 +87,22 @@ interface UserProfile {
   phone?: string | null;
 }
 
+interface AccountReview {
+  id: string;
+  rating: number;
+  title?: string | null;
+  comment: string;
+  isApproved: boolean;
+  createdAt: string;
+  product: {
+    id: string;
+    name: string;
+    slug: string;
+    images: string;
+    category: string;
+  };
+}
+
 function AccountContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -94,20 +110,21 @@ function AccountContent() {
   const addItem = useCartStore((s) => s.addItem);
   const openDrawer = useCartStore((s) => s.openDrawer);
 
-  const [activeTab, setActiveTab] = useState<'orders' | 'addresses' | 'wishlist' | 'profile'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'addresses' | 'wishlist' | 'reviews' | 'profile'>('orders');
   const [user, setUser] = useState<UserProfile | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
+  const [myReviews, setMyReviews] = useState<AccountReview[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (tabQuery && ['orders', 'addresses', 'wishlist', 'profile'].includes(tabQuery)) {
-      setActiveTab(tabQuery as 'orders' | 'addresses' | 'wishlist' | 'profile');
+    if (tabQuery && ['orders', 'addresses', 'wishlist', 'reviews', 'profile'].includes(tabQuery)) {
+      setActiveTab(tabQuery as 'orders' | 'addresses' | 'wishlist' | 'reviews' | 'profile');
     }
   }, [tabQuery]);
 
-  const handleTabChange = (tab: 'orders' | 'addresses' | 'wishlist' | 'profile') => {
+  const handleTabChange = (tab: 'orders' | 'addresses' | 'wishlist' | 'reviews' | 'profile') => {
     setActiveTab(tab);
     router.replace(`/account?tab=${tab}`, { scroll: false });
   };
@@ -132,11 +149,12 @@ function AccountContent() {
 
   const fetchData = async () => {
     try {
-      const [userRes, ordersRes, addrRes, wishRes] = await Promise.all([
+      const [userRes, ordersRes, addrRes, wishRes, revRes] = await Promise.all([
         fetch('/api/auth/me'),
         fetch('/api/account/orders'),
         fetch('/api/account/addresses'),
         fetch('/api/wishlist'),
+        fetch('/api/account/reviews'),
       ]);
 
       const userData = await userRes.json();
@@ -157,6 +175,11 @@ function AccountContent() {
 
       const wishData = await wishRes.json();
       if (wishData.items) setWishlist(wishData.items);
+
+      if (revRes.ok) {
+        const revData = await revRes.json();
+        if (revData.reviews) setMyReviews(revData.reviews);
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -384,6 +407,12 @@ function AccountContent() {
             Wishlist ({wishlist.length})
           </button>
           <button
+            className={`${styles.tabBtn} ${activeTab === 'reviews' ? styles.activeTab : ''}`}
+            onClick={() => handleTabChange('reviews')}
+          >
+            My Reviews ({myReviews.length})
+          </button>
+          <button
             className={`${styles.tabBtn} ${activeTab === 'profile' ? styles.activeTab : ''}`}
             onClick={() => handleTabChange('profile')}
           >
@@ -492,6 +521,20 @@ function AccountContent() {
                                 {item.selectedFragrance && ` · Scent: ${item.selectedFragrance}`}
                                 {item.selectedColor && ` · Shade: ${item.selectedColor}`}
                               </p>
+                              {item.product?.slug && (
+                                <Link
+                                  href={`/product/${item.product.slug}`}
+                                  style={{
+                                    fontSize: '0.8rem',
+                                    color: 'var(--color-clay-600, #ad6e33)',
+                                    marginTop: '4px',
+                                    display: 'inline-block',
+                                    textDecoration: 'underline',
+                                  }}
+                                >
+                                  Leave a Review →
+                                </Link>
+                              )}
                             </div>
                             <div className={styles.itemPrice}>
                               ₹{item.lineTotal.toLocaleString('en-IN')}
@@ -742,6 +785,44 @@ function AccountContent() {
                       </div>
                     );
                   })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'reviews' && (
+            <div>
+              {myReviews.length === 0 ? (
+                <div className={styles.emptyState}>
+                  <h2 className={styles.emptyTitle}>No Reviews Yet</h2>
+                  <p className={styles.emptyText}>
+                    You haven&apos;t reviewed any handcrafted pieces yet. Visit your completed orders or product pages to share your experience.
+                  </p>
+                </div>
+              ) : (
+                <div className={styles.addressGrid}>
+                  {myReviews.map((r) => (
+                    <div key={r.id} className={styles.addressCard}>
+                      <div className={styles.addressHeader}>
+                        <Link href={`/product/${r.product.slug}`} style={{ textDecoration: 'none', color: 'inherit', fontWeight: 600 }}>
+                          {r.product.name}
+                        </Link>
+                        <span className={r.isApproved ? styles.defaultBadge : styles.actionBtn}>
+                          {r.isApproved ? 'Approved' : 'Pending Review'}
+                        </span>
+                      </div>
+                      <p style={{ margin: '8px 0', fontSize: '0.9rem', color: 'var(--color-clay-600)' }}>
+                        {'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}
+                      </p>
+                      {r.title && <h4 style={{ margin: '4px 0', fontSize: '0.95rem' }}>{r.title}</h4>}
+                      <p style={{ margin: '8px 0', fontSize: '0.9rem', color: 'var(--color-charcoal-700)', lineHeight: 1.5 }}>
+                        {r.comment}
+                      </p>
+                      <span style={{ fontSize: '0.75rem', color: '#888' }}>
+                        {new Date(r.createdAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })}
+                      </span>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
