@@ -1,0 +1,78 @@
+.tabBar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  border-bottom: 1px solid var(--color-canvas-alt);
+  margin-bottom: var(--space-6);
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tabBar::-webkit-scrollbar {
+  display: none;
+}
+
+.tabBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #6B7280;
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease-in-out;
+  outline: none;
+  text-decoration: none;
+  margin-bottom: -1px;
+}
+
+.tabBtn:hover {
+  color: var(--color-forest);
+  border-bottom-color: rgba(51, 66, 42, 0.25);
+}
+
+.tabBtn:focus-visible {
+  border-radius: var(--radius-sm);
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+}
+
+.tabBtnActive {
+  color: var(--color-forest);
+  font-weight: 600;
+  border-bottom-color: var(--color-gold);
+}
+
+.tabIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.countBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  background: var(--color-canvas-alt);
+  color: var(--color-forest);
+  transition: all 0.15s ease-in-out;
+}
+
+.countBadgeActive {
+  background: var(--color-forest);
+  color: var(--color-canvas);
+}
