@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { PlusCircle, Search, Trash2, Edit } from 'lucide-react';
-import { StockBadge } from '@/components/StockBadge/StockBadge';
+import { StockBadge, BadgeStatus } from '@/components/StockBadge/StockBadge';
 import { Pagination } from '@/components/Pagination/Pagination';
 import { useDebounce } from '@/hooks/useDebounce';
 import styles from '../products.module.css';
@@ -32,7 +32,7 @@ export function CatalogTab() {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
-  const [limit] = useState(20);
+  const [limit, setLimit] = useState(20);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
@@ -89,6 +89,12 @@ export function CatalogTab() {
     } catch {
       alert('Error deleting product');
     }
+  };
+
+  const getStockStatus = (qty: number, threshold: number, inStock: boolean): BadgeStatus => {
+    if (!inStock || qty <= 0) return 'out-of-stock';
+    if (qty <= threshold) return 'low-stock';
+    return 'in-stock';
   };
 
   return (
@@ -212,9 +218,11 @@ export function CatalogTab() {
                       </td>
                       <td>
                         <StockBadge
-                          stockQuantity={p.stockQuantity}
-                          lowStockThreshold={p.lowStockThreshold}
-                          inStock={p.inStock}
+                          status={getStockStatus(
+                            p.stockQuantity,
+                            p.lowStockThreshold,
+                            p.inStock
+                          )}
                         />
                       </td>
                       <td>
@@ -262,10 +270,10 @@ export function CatalogTab() {
         )}
 
         <Pagination
-          currentPage={page}
+          page={page}
           totalPages={totalPages}
           totalItems={total}
-          itemsPerPage={limit}
+          limit={limit}
           onPageChange={(p) => setPage(p)}
         />
       </div>

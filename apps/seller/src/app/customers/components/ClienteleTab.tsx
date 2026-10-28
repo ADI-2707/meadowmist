@@ -74,19 +74,17 @@ export function ClienteleTab() {
           label="Registered Clientele"
           value={totalRegistered}
           icon={Users}
-          color="forest"
         />
         <StatCard
           label="Orders Delivered"
           value={totalOrders}
           icon={ShoppingBag}
-          color="forest"
         />
         <StatCard
           label="Clientele Lifetime Spend"
           value={`₹${totalSpend.toLocaleString('en-IN')}`}
           icon={IndianRupee}
-          color="gold"
+          highlight
         />
       </div>
 
@@ -192,10 +190,10 @@ export function ClienteleTab() {
         )}
 
         <Pagination
-          currentPage={page}
+          page={page}
           totalPages={totalPages}
           totalItems={total}
-          itemsPerPage={limit}
+          limit={limit}
           onPageChange={(p) => setPage(p)}
         />
       </div>

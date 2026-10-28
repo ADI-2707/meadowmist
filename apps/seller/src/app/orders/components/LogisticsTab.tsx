@@ -205,10 +205,10 @@ export function LogisticsTab() {
         )}
 
         <Pagination
-          currentPage={page}
+          page={page}
           totalPages={totalPages}
           totalItems={total}
-          itemsPerPage={limit}
+          limit={limit}
           onPageChange={(p) => setPage(p)}
         />
       </div>

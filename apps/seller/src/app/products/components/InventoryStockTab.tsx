@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Flame, Layers, AlertCircle, RefreshCw, IndianRupee } from 'lucide-react';
 import { StatCard } from '@/components/StatCard/StatCard';
-import { StockBadge } from '@/components/StockBadge/StockBadge';
+import { StockBadge, BadgeStatus } from '@/components/StockBadge/StockBadge';
 import { Pagination } from '@/components/Pagination/Pagination';
 import styles from '../products.module.css';
 
@@ -118,6 +118,12 @@ export function InventoryStockTab() {
     }
   };
 
+  const getStockStatus = (qty: number, threshold: number, inStock: boolean): BadgeStatus => {
+    if (!inStock || qty <= 0) return 'out-of-stock';
+    if (qty <= threshold) return 'low-stock';
+    return 'in-stock';
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -137,25 +143,22 @@ export function InventoryStockTab() {
             label="Candles in Stock"
             value={`${summary.totalCandles} pcs`}
             icon={Flame}
-            color="forest"
           />
           <StatCard
             label="Ceramics in Studio"
             value={`${summary.totalCeramics} pcs`}
             icon={Layers}
-            color="forest"
           />
           <StatCard
             label="Total Asset Value"
             value={`₹${summary.totalInventoryValue.toLocaleString('en-IN')}`}
             icon={IndianRupee}
-            color="gold"
+            highlight
           />
           <StatCard
             label="Low Stock Alerts"
             value={summary.lowStockCount}
             icon={AlertCircle}
-            color={summary.lowStockCount > 0 ? 'clay' : 'forest'}
           />
         </div>
       )}
@@ -237,9 +240,11 @@ export function InventoryStockTab() {
                       <td>₹{p.price.toLocaleString('en-IN')}</td>
                       <td>
                         <StockBadge
-                          stockQuantity={p.stockQuantity}
-                          lowStockThreshold={p.lowStockThreshold}
-                          inStock={p.inStock}
+                          status={getStockStatus(
+                            p.stockQuantity,
+                            p.lowStockThreshold,
+                            p.inStock
+                          )}
                         />
                       </td>
                       <td>
@@ -308,10 +313,10 @@ export function InventoryStockTab() {
         )}
 
         <Pagination
-          currentPage={page}
+          page={page}
           totalPages={totalPages}
           totalItems={total}
-          itemsPerPage={limit}
+          limit={limit}
           onPageChange={(p) => setPage(p)}
         />
       </div>
