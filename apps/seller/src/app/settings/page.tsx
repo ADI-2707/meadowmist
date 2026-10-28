@@ -13,6 +13,9 @@ export default function AdminSettingsPage() {
   const [freeShippingThreshold, setFreeShippingThreshold] = useState('1499');
   const [codEnabled, setCodEnabled] = useState(true);
   const [codFee, setCodFee] = useState('0');
+  const [aboutHeadline, setAboutHeadline] = useState('');
+  const [aboutStory, setAboutStory] = useState('');
+  const [aboutArtisanNote, setAboutArtisanNote] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -31,6 +34,9 @@ export default function AdminSettingsPage() {
             setFreeShippingThreshold(String(s.freeShippingThreshold ?? 1499));
             setCodEnabled(s.codEnabled ?? true);
             setCodFee(String(s.codFee ?? 0));
+            setAboutHeadline(s.aboutHeadline || '');
+            setAboutStory(s.aboutStory || '');
+            setAboutArtisanNote(s.aboutArtisanNote || '');
           }
         }
       } catch (err) {
@@ -59,6 +65,9 @@ export default function AdminSettingsPage() {
           freeShippingThreshold: Number(freeShippingThreshold),
           codEnabled,
           codFee: Number(codFee),
+          aboutHeadline,
+          aboutStory,
+          aboutArtisanNote,
         }),
       });
 
@@ -168,6 +177,51 @@ export default function AdminSettingsPage() {
               />
             </div>
           )}
+        </div>
+
+        <div className={styles.formSection}>
+          <h2 className={styles.sectionTitle}>4. Brand Story & Artisan Narrative</h2>
+
+          <div className={styles.field}>
+            <label className={styles.label}>Homepage & Story Headline</label>
+            <input
+              className={styles.input}
+              value={aboutHeadline}
+              onChange={(e) => setAboutHeadline(e.target.value)}
+              placeholder="e.g. Things made by hand, grown like something living."
+            />
+            <p className={styles.helpText}>
+              Featured on the storefront homepage story section and the /our-story page hero banner.
+            </p>
+          </div>
+
+          <div className={styles.field}>
+            <label className={styles.label}>Artisan Brand Story</label>
+            <textarea
+              className={styles.textarea}
+              rows={4}
+              value={aboutStory}
+              onChange={(e) => setAboutStory(e.target.value)}
+              placeholder="Describe the origins, small-batch philosophy, and studio process..."
+            />
+            <p className={styles.helpText}>
+              Displayed across the homepage story block and the primary &ldquo;How it started&rdquo; chapter on /our-story.
+            </p>
+          </div>
+
+          <div className={styles.field}>
+            <label className={styles.label}>Artisan Note / Studio Footnote</label>
+            <textarea
+              className={styles.textarea}
+              rows={3}
+              value={aboutArtisanNote}
+              onChange={(e) => setAboutArtisanNote(e.target.value)}
+              placeholder="e.g. Variations in glaze and petal folds are intentional features of handmade work..."
+            />
+            <p className={styles.helpText}>
+              Appears as the artisan craftsmanship disclaimer on /our-story when provided.
+            </p>
+          </div>
         </div>
 
         <button type="submit" disabled={saving} className={styles.submitBtn}>
