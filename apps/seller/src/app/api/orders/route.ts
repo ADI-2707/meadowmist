@@ -13,14 +13,24 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const status = url.searchParams.get('status');
     const search = url.searchParams.get('search');
+    const returnStatus = url.searchParams.get('returnStatus');
 
     const whereClause: {
       status?: string;
+      returnStatus?: string | { not: string };
       OR?: { [key: string]: unknown }[];
     } = {};
 
     if (status && status !== 'ALL') {
       whereClause.status = status;
+    }
+
+    if (returnStatus) {
+      if (returnStatus === 'ANY') {
+        whereClause.returnStatus = { not: 'NONE' };
+      } else {
+        whereClause.returnStatus = returnStatus;
+      }
     }
 
     if (search && search.trim()) {
@@ -57,17 +67,21 @@ export async function GET(request: Request) {
       }),
     ]);
 
+    const totalPages = Math.ceil(total / limit) || 1;
+
     return NextResponse.json({
       orders,
-      pagination: {
-        page: isPaginated ? page : 1,
-        limit: isPaginated ? limit : total,
-        total,
-        totalPages: isPaginated ? Math.ceil(total / limit) : 1,
-      },
+      pagination: isPaginated
+        ? {
+            page,
+            limit,
+            total,
+            totalPages,
+          }
+        : null,
     });
   } catch (error) {
-    console.error('Orders GET error:', error);
+    console.error('Admin orders GET error:', error);
     return NextResponse.json({ error: 'Failed to fetch orders' }, { status: 500 });
   }
 }
