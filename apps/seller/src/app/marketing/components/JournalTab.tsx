@@ -245,3 +245,4 @@ export function JournalTab() {
     </div>
   );
 }
+

@@ -180,7 +180,19 @@ export function CatalogTab() {
                     <tr key={p.id}>
                       <td>
                         <div className={styles.productCell}>
-                          <div className={styles.thumbWrapper}>
+                          <div
+                            className={styles.thumbWrapper}
+                            style={{
+                              position: 'relative',
+                              width: 44,
+                              height: 44,
+                              minWidth: 44,
+                              minHeight: 44,
+                              borderRadius: 'var(--radius-sm)',
+                              overflow: 'hidden',
+                              flexShrink: 0,
+                            }}
+                          >
                             <Image
                               src={thumb}
                               alt={p.name}

@@ -59,3 +59,4 @@ describe('TabNav Component', () => {
     expect(pushMock).toHaveBeenCalledWith('/products?tab=inventory', { scroll: false });
   });
 });
+

@@ -24,6 +24,7 @@ export const PAGE_TITLES: Record<string, string> = {
   '/enquiries': 'Customer Enquiries Inbox',
   '/content': 'Store Content CMS',
   '/promotions': 'Promotions & Coupons',
+  '/marketing': 'Marketing & Storefront',
   '/settings': 'Store Settings',
 };
 
