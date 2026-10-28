@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Search, Eye } from 'lucide-react';
+import { Search, Eye, PackageCheck } from 'lucide-react';
 import { StockBadge, BadgeStatus } from '@/components/StockBadge/StockBadge';
 import { Pagination } from '@/components/Pagination/Pagination';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -102,7 +102,8 @@ export function ActiveOrdersTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
       <div className={styles.filterBar}>
-        <div style={{ display: 'flex', flex: 1, gap: '8px' }}>
+        <div className={styles.searchWrap}>
+          <Search size={16} className={styles.searchIcon} />
           <input
             type="text"
             placeholder="Search order #, customer name, or email..."
@@ -129,7 +130,15 @@ export function ActiveOrdersTab() {
         {loading ? (
           <div className={styles.emptyState}>Loading active orders queue...</div>
         ) : orders.length === 0 ? (
-          <div className={styles.emptyState}>No active orders awaiting processing.</div>
+          <div className={styles.emptyState}>
+            <PackageCheck size={36} strokeWidth={1.5} style={{ opacity: 0.45, color: 'var(--color-forest)' }} />
+            <p style={{ margin: 0, fontWeight: 600, color: 'var(--color-forest)' }}>
+              No active orders awaiting processing.
+            </p>
+            <p style={{ margin: 0, fontSize: '0.84rem', color: '#666' }}>
+              New orders placed on the storefront will appear here.
+            </p>
+          </div>
         ) : (
           <table className={styles.table}>
             <thead>

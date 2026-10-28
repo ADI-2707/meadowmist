@@ -94,7 +94,8 @@ export function LogisticsTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
       <div className={styles.filterBar}>
-        <div style={{ display: 'flex', flex: 1, gap: '8px' }}>
+        <div className={styles.searchWrap}>
+          <Search size={16} className={styles.searchIcon} />
           <input
             type="text"
             placeholder="Search AWB tracking #, order #, or customer..."
@@ -120,7 +121,15 @@ export function LogisticsTab() {
         {loading ? (
           <div className={styles.emptyState}>Loading courier shipments...</div>
         ) : orders.length === 0 ? (
-          <div className={styles.emptyState}>No dispatched shipments found.</div>
+          <div className={styles.emptyState}>
+            <Truck size={36} strokeWidth={1.5} style={{ opacity: 0.45, color: 'var(--color-forest)' }} />
+            <p style={{ margin: 0, fontWeight: 600, color: 'var(--color-forest)' }}>
+              No dispatched shipments found.
+            </p>
+            <p style={{ margin: 0, fontSize: '0.84rem', color: '#666' }}>
+              Orders marked as shipped will appear in this tracking register.
+            </p>
+          </div>
         ) : (
           <table className={styles.table}>
             <thead>

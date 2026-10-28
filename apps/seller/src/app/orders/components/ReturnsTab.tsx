@@ -71,7 +71,8 @@ export function ReturnsTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
       <div className={styles.filterBar}>
-        <div style={{ display: 'flex', flex: 1, gap: '8px' }}>
+        <div className={styles.searchWrap}>
+          <Search size={16} className={styles.searchIcon} />
           <input
             type="text"
             placeholder="Search return request by order # or customer..."
@@ -86,7 +87,15 @@ export function ReturnsTab() {
         {loading ? (
           <div className={styles.emptyState}>Loading return requests queue...</div>
         ) : orders.length === 0 ? (
-          <div className={styles.emptyState}>No return or refund requests reported.</div>
+          <div className={styles.emptyState}>
+            <RotateCcw size={36} strokeWidth={1.5} style={{ opacity: 0.45, color: 'var(--color-forest)' }} />
+            <p style={{ margin: 0, fontWeight: 600, color: 'var(--color-forest)' }}>
+              No return or refund requests reported.
+            </p>
+            <p style={{ margin: 0, fontSize: '0.84rem', color: '#666' }}>
+              Return requests submitted by customers will be queued here for review.
+            </p>
+          </div>
         ) : (
           <table className={styles.table}>
             <thead>
