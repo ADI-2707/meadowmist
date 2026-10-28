@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Users, Mail, Phone, ShoppingBag, Heart, IndianRupee } from 'lucide-react';
+import { Users, Mail, Phone, ShoppingBag, Heart, IndianRupee, Search } from 'lucide-react';
 import { StatCard } from '@/components/StatCard/StatCard';
 import { Pagination } from '@/components/Pagination/Pagination';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -89,13 +89,16 @@ export function ClienteleTab() {
       </div>
 
       <div className={styles.filterBar}>
-        <input
-          type="text"
-          placeholder="Search by customer name, email, or city..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className={styles.searchInput}
-        />
+        <div className={styles.searchWrap}>
+          <Search size={16} className={styles.searchIcon} />
+          <input
+            type="text"
+            placeholder="Search by customer name, email, or city..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className={styles.searchInput}
+          />
+        </div>
       </div>
 
       <div className={styles.tableCard}>

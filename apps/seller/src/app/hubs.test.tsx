@@ -91,6 +91,7 @@ describe('Seller Domain Hubs Rendering', () => {
     expect(screen.getByText('Clientele Directory')).toBeDefined();
     expect(screen.getByText('Support Inquiries')).toBeDefined();
     expect(screen.getByText('Customer Reviews')).toBeDefined();
+    expect(screen.getByText('Newsletter Subscribers')).toBeDefined();
   });
 
   it('renders Marketing & Storefront Hub with tabs and header', () => {

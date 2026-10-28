@@ -2,12 +2,13 @@
 
 import React, { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Users, MessageSquare, Star } from 'lucide-react';
+import { Users, MessageSquare, Star, Mail } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { TabNav, TabItem } from '@/components/TabNav/TabNav';
 import { ClienteleTab } from './components/ClienteleTab';
 import { SupportInboxTab } from './components/SupportInboxTab';
 import { ReviewsModerationTab } from './components/ReviewsModerationTab';
+import { NewsletterSubscribersTab } from './components/NewsletterSubscribersTab';
 import styles from './customers.module.css';
 
 function CustomersContent() {
@@ -46,6 +47,11 @@ function CustomersContent() {
       label: 'Customer Reviews',
       icon: Star,
     },
+    {
+      id: 'subscribers',
+      label: 'Newsletter Subscribers',
+      icon: Mail,
+    },
   ];
 
   return (
@@ -53,7 +59,7 @@ function CustomersContent() {
       <PageHeader
         eyebrow="Clientele & Relations"
         title="Customers & Support"
-        subtitle="Customer directory, contact inquiries inbox, and customer review moderation."
+        subtitle="Customer directory, contact inquiries inbox, review moderation, and newsletter audience."
       />
 
       <TabNav tabs={tabs} activeTab={currentTab} />
@@ -61,7 +67,8 @@ function CustomersContent() {
       <div role="tabpanel" id={`tabpanel-${currentTab}`} aria-labelledby={`tab-${currentTab}`}>
         {currentTab === 'inbox' && <SupportInboxTab />}
         {currentTab === 'reviews' && <ReviewsModerationTab />}
-        {currentTab !== 'inbox' && currentTab !== 'reviews' && <ClienteleTab />}
+        {currentTab === 'subscribers' && <NewsletterSubscribersTab />}
+        {currentTab !== 'inbox' && currentTab !== 'reviews' && currentTab !== 'subscribers' && <ClienteleTab />}
       </div>
     </div>
   );
