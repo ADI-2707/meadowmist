@@ -6,8 +6,25 @@
 
 .metricsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: var(--space-4);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  width: 100%;
+}
+
+@media (max-width: 860px) {
+  .metricsGrid {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: var(--space-3);
+    padding-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+  .metricsGrid > * {
+    flex: 0 0 180px;
+    min-width: 180px;
+  }
 }
 
 .filterBar {
@@ -137,11 +154,7 @@
   opacity: 0.85;
 }
 
-@media (max-width: 640px) {
-  .metricsGrid {
-    grid-template-columns: 1fr;
-  }
-}
+
 
 .enquiryLayout {
   display: grid;

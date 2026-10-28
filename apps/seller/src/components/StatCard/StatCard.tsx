@@ -33,7 +33,7 @@ export function StatCard({ label, value, subtext, icon, badge, highlight }: Stat
       return icon;
     }
     const IconComponent = icon as React.ComponentType<{ size?: number; className?: string }>;
-    return <IconComponent size={18} />;
+    return <IconComponent size={15} />;
   };
 
   return (
