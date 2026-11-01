@@ -11,6 +11,9 @@ export async function GET(request: Request, context: RouteContext) {
     const { id } = await context.params;
     const product = await prisma.product.findUnique({
       where: { id },
+      include: {
+        variants: true,
+      },
     });
 
     if (!product) {
@@ -83,6 +86,9 @@ export async function PUT(request: Request, context: RouteContext) {
         inStock: stockQuantity !== undefined ? Number(stockQuantity) > 0 : existing.inStock,
         isFeatured: isFeatured !== undefined ? Boolean(isFeatured) : existing.isFeatured,
         isActive: isActive !== undefined ? Boolean(isActive) : existing.isActive,
+      },
+      include: {
+        variants: true,
       },
     });
 
