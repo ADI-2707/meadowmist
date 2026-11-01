@@ -226,6 +226,7 @@ function AccountContent() {
     resolutionPreference: 'REFUND' | 'REPLACEMENT';
     notes: string;
     selectedItems: string[];
+    images?: string[];
   }) => {
     if (!returningOrder) return;
     try {

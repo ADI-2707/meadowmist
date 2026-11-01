@@ -39,6 +39,24 @@ describe('OrderReturnModal Component', () => {
     expect(screen.getByText(/Fluted Ceramic Saucer \(Qty: 1\)/i)).toBeDefined();
   });
 
+  it('renders candle hygiene policy and transit breakage protocol notices', () => {
+    render(
+      <OrderReturnModal
+        isOpen={true}
+        orderNumber="MM-ORD-1001"
+        items={mockItems}
+        onClose={vi.fn()}
+        onConfirm={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText(/Candle Hygiene & Safety Policy/i)).toBeDefined();
+    expect(screen.getByText(/Used or burned candles cannot be returned/i)).toBeDefined();
+    expect(screen.getByText(/Transit Breakage Protocol/i)).toBeDefined();
+    expect(screen.getByText(/within 48 hours of delivery/i)).toBeDefined();
+    expect(screen.getByText(/Shipping sharp shards of broken ceramic back/i)).toBeDefined();
+  });
+
   it('switches resolution preference between refund and replacement', () => {
     render(
       <OrderReturnModal
@@ -57,7 +75,7 @@ describe('OrderReturnModal Component', () => {
     expect((replacementRadio as HTMLInputElement).checked).toBe(true);
   });
 
-  it('submits return request with structured details and resolution preference', async () => {
+  it('submits return request with structured details, resolution preference, and images', async () => {
     const onConfirm = vi.fn().mockResolvedValue(undefined);
     render(
       <OrderReturnModal
@@ -92,6 +110,7 @@ describe('OrderReturnModal Component', () => {
       resolutionPreference: 'REPLACEMENT',
       notes: 'Wick drowned on first burn',
       selectedItems: ['item_1', 'item_2'],
+      images: [],
     });
   });
 

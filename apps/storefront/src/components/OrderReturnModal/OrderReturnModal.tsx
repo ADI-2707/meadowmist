@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { X, Sparkles, Loader2 } from 'lucide-react';
+import { X, Sparkles, Loader2, Flame, ShieldAlert, UploadCloud, Trash2 } from 'lucide-react';
 import styles from './OrderReturnModal.module.css';
 
 interface OrderItem {
@@ -20,6 +20,7 @@ interface OrderReturnModalProps {
     resolutionPreference: 'REFUND' | 'REPLACEMENT';
     notes: string;
     selectedItems: string[];
+    images?: string[];
   }) => Promise<void>;
 }
 
@@ -42,6 +43,9 @@ export function OrderReturnModal({
   const [resolutionPreference, setResolutionPreference] = useState<'REFUND' | 'REPLACEMENT'>('REFUND');
   const [selectedItemIds, setSelectedItemIds] = useState<string[]>(() => items.map((i) => i.id));
   const [notes, setNotes] = useState('');
+  const [images, setImages] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -64,6 +68,45 @@ export function OrderReturnModal({
     );
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    if (images.length >= 3) {
+      setUploadError('Maximum 3 photos allowed');
+      return;
+    }
+
+    setUploading(true);
+    setUploadError(null);
+
+    try {
+      const file = files[0];
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/reviews/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setUploadError(data.error || 'Failed to upload photo');
+      } else if (data.url) {
+        setImages((prev) => [...prev, data.url].slice(0, 3));
+      }
+    } catch {
+      setUploadError('Network error uploading photo');
+    } finally {
+      setUploading(false);
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  const removeImage = (indexToRemove: number) => {
+    setImages((prev) => prev.filter((_, idx) => idx !== indexToRemove));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedItemIds.length === 0) {
@@ -77,6 +120,7 @@ export function OrderReturnModal({
         resolutionPreference,
         notes,
         selectedItems: selectedItemIds,
+        images,
       });
     } finally {
       setSubmitting(false);
@@ -107,6 +151,20 @@ export function OrderReturnModal({
               <Sparkles size={18} />
               <div>
                 <strong>7-Day Handcrafted Guarantee:</strong> If any ceramic piece or candle arrives broken, defective, or not as expected, we will gladly arrange a swift replacement or full refund.
+              </div>
+            </div>
+
+            <div className={styles.policyNotice}>
+              <Flame size={16} className={styles.candleIcon} />
+              <div>
+                <strong>Candle Hygiene & Safety Policy:</strong> Used or burned candles cannot be returned for buyer's remorse (once the wick is burned, the piece cannot be resold). Unused, unlit candles in original packaging can be returned within 7 to 14 days of delivery.
+              </div>
+            </div>
+
+            <div className={styles.damageNotice}>
+              <ShieldAlert size={16} className={styles.damageIcon} />
+              <div>
+                <strong>Transit Breakage Protocol:</strong> Breakage must be reported within 48 hours of delivery with a clear photo of the cracked piece and the shipping label. Shipping sharp shards of broken ceramic back to the artisan wastes courier fees and creates a safety hazard. Once your photo is verified, we immediately dispatch a fresh studio replacement or issue a full refund.
               </div>
             </div>
 
@@ -185,6 +243,45 @@ export function OrderReturnModal({
                   </div>
                 </label>
               </div>
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.label}>
+                Damage or Defect Photographs (Max 3 photos)
+              </label>
+              <div className={styles.uploadArea}>
+                {images.map((imgUrl, index) => (
+                  <div key={imgUrl} className={styles.thumbnailWrapper}>
+                    <img src={imgUrl} alt={`Damage photo ${index + 1}`} className={styles.thumbnail} />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(index)}
+                      className={styles.removeImageBtn}
+                      aria-label="Remove photo"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                ))}
+                {images.length < 3 && (
+                  <label className={styles.uploadBtn}>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/avif"
+                      onChange={handleFileUpload}
+                      disabled={uploading || submitting}
+                      className={styles.hiddenFileInput}
+                    />
+                    {uploading ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <UploadCloud size={16} />
+                    )}
+                    <span>{uploading ? 'Uploading...' : 'Upload Photo'}</span>
+                  </label>
+                )}
+              </div>
+              {uploadError && <div className={styles.uploadError}>{uploadError}</div>}
             </div>
 
             <div className={styles.field}>
