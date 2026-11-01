@@ -2,12 +2,14 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { comparePassword } from '@/lib/password';
 import { signToken } from '@/lib/auth';
-import { setAdminSessionCookie } from '@/lib/session';
+import { setAdminSessionCookie, setTrustedDeviceCookie } from '@/lib/session';
 import {
   checkLoginAttempt,
   recordFailedAttempt,
   resetFailedAttempts,
   verifyTurnstileToken,
+  generateDeviceToken,
+  calculateDeviceExpiry,
 } from '@meadowmist/shared';
 
 function getClientIp(request: Request): string {
@@ -133,6 +135,29 @@ export async function POST(request: Request) {
     );
 
     await setAdminSessionCookie(token);
+
+    const { rawToken, tokenHash } = generateDeviceToken();
+    await setTrustedDeviceCookie(rawToken);
+
+    if (prisma.trustedDevice) {
+      try {
+        await prisma.trustedDevice.upsert({
+          where: { deviceHash: tokenHash },
+          update: {
+            lastUsedAt: new Date(),
+            lastIp: ip,
+            userAgent: request.headers.get('user-agent') || null,
+          },
+          create: {
+            userId: user.id,
+            deviceHash: tokenHash,
+            lastIp: ip,
+            userAgent: request.headers.get('user-agent') || null,
+            expiresAt: calculateDeviceExpiry(30),
+          },
+        });
+      } catch {}
+    }
 
     return NextResponse.json({
       user: {

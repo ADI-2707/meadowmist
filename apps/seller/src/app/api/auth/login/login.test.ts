@@ -29,6 +29,7 @@ vi.mock('@/lib/auth', () => ({
 
 vi.mock('@/lib/session', () => ({
   setAdminSessionCookie: vi.fn(),
+  setTrustedDeviceCookie: vi.fn(),
 }));
 
 vi.mock('@meadowmist/shared', async () => {

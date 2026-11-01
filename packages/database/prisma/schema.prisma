@@ -15,6 +15,8 @@ model User {
   phone               String?
   role                String               @default("CUSTOMER")
   isActive            Boolean              @default(true)
+  twoFactorSecret     String?
+  twoFactorEnabled    Boolean              @default(false)
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   addresses           Address[]
@@ -24,6 +26,7 @@ model User {
   enquiries           Enquiry[]
   reviews             Review[]
   passwordResetTokens PasswordResetToken[]
+  trustedDevices      TrustedDevice[]
 }
 
 model Address {
@@ -370,4 +373,20 @@ model NewsletterSubscriber {
   createdAt DateTime @default(now())
 
   @@index([email])
+}
+
+model TrustedDevice {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceHash String   @unique
+  deviceName String?
+  userAgent  String?
+  lastIp     String?
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  lastUsedAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([deviceHash])
 }

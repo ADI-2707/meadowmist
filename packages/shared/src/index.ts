@@ -5,3 +5,4 @@ export * from './types';
 export * from './rateLimit';
 export * from './pagination';
 export * from './turnstile';
+export * from './deviceTrust';
