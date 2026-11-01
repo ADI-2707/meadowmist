@@ -14,6 +14,7 @@ export async function POST(request: Request, context: RouteContext) {
       reason = 'Defective or damaged item',
       resolutionPreference = 'REFUND',
       notes = '',
+      images = [],
     } = body;
 
     const session = await getSessionUser();
@@ -49,6 +50,31 @@ export async function POST(request: Request, context: RouteContext) {
       );
     }
 
+    const deliveryDate = order.updatedAt ? new Date(order.updatedAt) : new Date();
+    const elapsedMs = Date.now() - deliveryDate.getTime();
+    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
+    if (elapsedMs > SEVEN_DAYS_MS) {
+      return NextResponse.json(
+        { error: 'Return window has expired. Returns must be requested within 7 days of delivery.' },
+        { status: 400 }
+      );
+    }
+
+    const isDamage = /damag|break|crack/i.test(String(reason));
+    const TWO_DAYS_MS = 48 * 60 * 60 * 1000;
+    if (isDamage && elapsedMs > TWO_DAYS_MS) {
+      return NextResponse.json(
+        { error: 'Transit damage and breakage must be reported within 48 hours of delivery.' },
+        { status: 400 }
+      );
+    }
+
+    let returnImagesStr: string | null = null;
+    if (Array.isArray(images) && images.length > 0) {
+      returnImagesStr = JSON.stringify(images.slice(0, 3));
+    }
+
     const formattedReason = `${String(reason).trim()} [Preference: ${resolutionPreference}]${notes ? ` - ${String(notes).trim()}` : ''}`;
 
     const updated = await prisma.order.update({
@@ -56,6 +82,7 @@ export async function POST(request: Request, context: RouteContext) {
       data: {
         returnStatus: 'REQUESTED',
         returnReason: formattedReason,
+        returnImages: returnImagesStr,
         returnRequestedAt: new Date(),
       },
     });
