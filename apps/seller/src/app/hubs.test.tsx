@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import InventoryRedirectPage from './inventory/page';
 import ReviewsRedirectPage from './reviews/page';
 import EnquiriesRedirectPage from './enquiries/page';
@@ -69,24 +69,30 @@ describe('Seller Domain Hubs Rendering', () => {
     );
   });
 
-  it('renders Catalog & Stock Hub with tabs and header', () => {
-    render(<AdminProductsPage />);
+  it('renders Catalog & Stock Hub with tabs and header', async () => {
+    await act(async () => {
+      render(<AdminProductsPage />);
+    });
     expect(screen.getByText('Catalog & Stock')).toBeDefined();
     expect(screen.getByText('Products Catalog')).toBeDefined();
     expect(screen.getByText('Live Stock & Batches')).toBeDefined();
     expect(screen.getByText('Stock Movement Logs')).toBeDefined();
   });
 
-  it('renders Orders & Logistics Hub with tabs and header', () => {
-    render(<AdminOrdersPage />);
+  it('renders Orders & Logistics Hub with tabs and header', async () => {
+    await act(async () => {
+      render(<AdminOrdersPage />);
+    });
     expect(screen.getByText('Orders & Logistics')).toBeDefined();
     expect(screen.getByText('Active Orders')).toBeDefined();
     expect(screen.getByText('Dispatched & Tracking')).toBeDefined();
     expect(screen.getByText('Returns & Refunds')).toBeDefined();
   });
 
-  it('renders Customers & Support Hub with tabs and header', () => {
-    render(<AdminCustomersPage />);
+  it('renders Customers & Support Hub with tabs and header', async () => {
+    await act(async () => {
+      render(<AdminCustomersPage />);
+    });
     expect(screen.getByText('Customers & Support')).toBeDefined();
     expect(screen.getByText('Clientele Directory')).toBeDefined();
     expect(screen.getByText('Support Inquiries')).toBeDefined();
@@ -94,8 +100,10 @@ describe('Seller Domain Hubs Rendering', () => {
     expect(screen.getByText('Newsletter Subscribers')).toBeDefined();
   });
 
-  it('renders Marketing & Storefront Hub with tabs and header', () => {
-    render(<AdminMarketingPage />);
+  it('renders Marketing & Storefront Hub with tabs and header', async () => {
+    await act(async () => {
+      render(<AdminMarketingPage />);
+    });
     expect(screen.getByText('Marketing & Storefront')).toBeDefined();
     expect(screen.getByText('Promotions & Discounts')).toBeDefined();
     expect(screen.getByText('Hero & Showcase Banners')).toBeDefined();
@@ -103,4 +111,3 @@ describe('Seller Domain Hubs Rendering', () => {
     expect(screen.getByText('Store FAQs')).toBeDefined();
   });
 });
-

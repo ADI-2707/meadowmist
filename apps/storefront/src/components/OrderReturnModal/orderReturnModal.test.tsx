@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { OrderReturnModal } from './OrderReturnModal';
 
 describe('OrderReturnModal Component', () => {
@@ -83,7 +83,9 @@ describe('OrderReturnModal Component', () => {
     });
 
     const submitBtn = screen.getByRole('button', { name: /Submit Return Request/i });
-    await fireEvent.click(submitBtn);
+    await act(async () => {
+      fireEvent.click(submitBtn);
+    });
 
     expect(onConfirm).toHaveBeenCalledWith({
       reason: 'Defective wick / improper burn / wax leak',
