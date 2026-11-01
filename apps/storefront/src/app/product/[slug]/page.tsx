@@ -25,13 +25,28 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const product = await getProductBySlug(slug);
   if (!product) return { title: 'Product Not Found' };
+
+  const description = product.story ? product.story.slice(0, 155) : 'Small-batch artisanal piece by Meadow Mist.';
+  const primaryImage = product.images[0] || '/images/logo.jpg';
+
   return {
     title: product.name,
-    description: product.story.slice(0, 155),
+    description,
     openGraph: {
       title: `${product.name} | Meadow Mist`,
-      description: product.story.slice(0, 155),
-      images: [{ url: product.images[0], width: 800, height: 600, alt: product.name }],
+      description,
+      type: 'website',
+      url: `https://meadowmist.in/product/${slug}`,
+      images: [{ url: primaryImage, width: 800, height: 600, alt: product.name }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${product.name} | Meadow Mist`,
+      description,
+      images: [primaryImage],
+    },
+    alternates: {
+      canonical: `https://meadowmist.in/product/${slug}`,
     },
   };
 }
@@ -108,12 +123,10 @@ export default async function ProductPage({ params }: Props) {
               </ul>
             </div>
 
-            {product.dimensions && (
-              <div className={styles.dimensions}>
-                <p className={styles.detailLabel}>Dimensions</p>
-                <p>{product.dimensions}</p>
-              </div>
-            )}
+            <div className={styles.dimensions}>
+              <p className={styles.detailLabel}>Dimensions</p>
+              <p>{product.dimensions || 'Handcrafted dimensions vary slightly per piece.'}</p>
+            </div>
 
             <div className={styles.makingOf}>
               <p className={styles.makingOfLabel}>The making of</p>
