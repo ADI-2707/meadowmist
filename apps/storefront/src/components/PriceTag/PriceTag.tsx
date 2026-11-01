@@ -1,3 +1,4 @@
+import React from 'react';
 import styles from './PriceTag.module.css';
 
 interface Props {
