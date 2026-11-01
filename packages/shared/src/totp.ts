@@ -97,3 +97,4 @@ export function generateTotpUri(
   const encAccount = encodeURIComponent(accountName);
   return `otpauth://totp/${encIssuer}:${encAccount}?secret=${secret}&issuer=${encIssuer}&algorithm=SHA1&digits=6&period=30`;
 }
+

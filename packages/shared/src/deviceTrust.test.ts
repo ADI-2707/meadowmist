@@ -57,3 +57,4 @@ describe('Trusted Device Fingerprinting Engine', () => {
     expect(isDeviceExpired('invalid-date')).toBe(true);
   });
 });
+

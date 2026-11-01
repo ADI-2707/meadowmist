@@ -66,3 +66,4 @@ describe('RFC 6238 TOTP Engine', () => {
     expect(uri).toContain('period=30');
   });
 });
+

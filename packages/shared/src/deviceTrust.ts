@@ -21,3 +21,4 @@ export function isDeviceExpired(expiresAt: Date | string | number): boolean {
   const expiryTime = new Date(expiresAt).getTime();
   return isNaN(expiryTime) || Date.now() > expiryTime;
 }
+
