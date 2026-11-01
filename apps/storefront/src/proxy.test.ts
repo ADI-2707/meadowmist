@@ -88,3 +88,4 @@ describe('Storefront Proxy Authentication Guard', () => {
     expect(res.status).toBe(200);
   });
 });
+
