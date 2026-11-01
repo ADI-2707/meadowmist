@@ -25,7 +25,7 @@ describe('Place Order API Route', () => {
     postalCode: '560001',
   };
 
-  it('returns 400 when guest email is missing or invalid for unauthenticated order', async () => {
+  it('returns 401 when user session is not authenticated', async () => {
     vi.mocked(getSessionUser).mockResolvedValue(null);
 
     const req = new Request('http://localhost:3000/api/orders/place', {
@@ -35,13 +35,18 @@ describe('Place Order API Route', () => {
     });
 
     const res = await POST(req);
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(401);
     const body = await res.json();
-    expect(body.error).toBe('Please provide a valid contact email for guest checkout');
+    expect(body.error).toBe('Please sign in to place an order');
   });
 
-  it('successfully places an order as a guest without user session', async () => {
-    vi.mocked(getSessionUser).mockResolvedValue(null);
+  it('successfully places an order as an authenticated customer', async () => {
+    vi.mocked(getSessionUser).mockResolvedValue({
+      userId: 'user_cust_1',
+      email: 'meera@example.com',
+      name: 'Meera',
+      role: 'CUSTOMER',
+    });
 
     let capturedCreateData: any = null;
     const deleteManyMock = vi.fn();
@@ -65,7 +70,7 @@ describe('Place Order API Route', () => {
           update: vi.fn(),
         },
         inventoryLog: {
-          create: vi.fn().mockResolvedValue({ id: 'log_guest' }),
+          create: vi.fn().mockResolvedValue({ id: 'log_cust' }),
         },
         storeSettings: {
           findUnique: vi.fn().mockResolvedValue({
@@ -76,7 +81,7 @@ describe('Place Order API Route', () => {
         order: {
           create: vi.fn().mockImplementation(async (args) => {
             capturedCreateData = args.data;
-            return { id: 'order_guest_1', ...args.data };
+            return { id: 'order_cust_1', ...args.data };
           }),
         },
         cartItem: {
@@ -92,18 +97,16 @@ describe('Place Order API Route', () => {
       body: JSON.stringify({
         items: [{ productId: 'p1', qty: 1 }],
         shippingAddress: validAddress,
-        guestEmail: 'meera@example.com',
-        guestPhone: '+91 9876543210',
       }),
     });
 
     const res = await POST(req);
     expect(res.status).toBe(201);
-    expect(capturedCreateData.isGuest).toBe(true);
-    expect(capturedCreateData.userId).toBeNull();
-    expect(capturedCreateData.guestEmail).toBe('meera@example.com');
-    expect(capturedCreateData.guestPhone).toBe('+91 9876543210');
-    expect(deleteManyMock).not.toHaveBeenCalled();
+    expect(capturedCreateData.isGuest).toBe(false);
+    expect(capturedCreateData.userId).toBe('user_cust_1');
+    expect(capturedCreateData.guestEmail).toBeNull();
+    expect(capturedCreateData.guestPhone).toBeNull();
+    expect(deleteManyMock).toHaveBeenCalledWith({ where: { userId: 'user_cust_1' } });
   });
 
   it('returns 400 when items array is missing or empty', async () => {

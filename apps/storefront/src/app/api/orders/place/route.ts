@@ -16,15 +16,12 @@ interface RequestItem {
 export async function POST(request: Request) {
   try {
     const session = await getSessionUser();
-    const body = await request.json();
-    const { items, shippingAddress, paymentMethod = 'COD', promoCode, customerNotes, guestEmail, guestPhone } = body;
-
-    const email = session?.email || guestEmail || shippingAddress?.email;
-    const phone = guestPhone || shippingAddress?.phone;
-
-    if (!session && (!email || !String(email).includes('@'))) {
-      return NextResponse.json({ error: 'Please provide a valid contact email for guest checkout' }, { status: 400 });
+    if (!session) {
+      return NextResponse.json({ error: 'Please sign in to place an order' }, { status: 401 });
     }
+
+    const body = await request.json();
+    const { items, shippingAddress, paymentMethod = 'COD', promoCode, customerNotes } = body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'Order must contain at least one item' }, { status: 400 });
@@ -145,7 +142,7 @@ export async function POST(request: Request) {
             changeQuantity: -qty,
             newQuantity: newStock,
             reason: 'ORDER_PLACED',
-            note: `Order placed by ${session ? `user ${session.email}` : `guest ${email}`}${variant ? ` (Variant: ${variant.sku} - ${variant.name})` : ''}`,
+            note: `Order placed by customer ${session.email}${variant ? ` (Variant: ${variant.sku} - ${variant.name})` : ''}`,
           },
         });
 
@@ -223,10 +220,10 @@ export async function POST(request: Request) {
       const createdOrder = await tx.order.create({
         data: {
           orderNumber,
-          userId: session?.userId || null,
-          isGuest: !session,
-          guestEmail: session ? null : String(email).trim().toLowerCase(),
-          guestPhone: session ? null : (phone ? String(phone).trim() : null),
+          userId: session.userId,
+          isGuest: false,
+          guestEmail: null,
+          guestPhone: null,
           status: 'PENDING',
           subtotal: verifiedSubtotal,
           shippingCharges,
@@ -247,11 +244,9 @@ export async function POST(request: Request) {
         },
       });
 
-      if (session?.userId) {
-        await tx.cartItem.deleteMany({
-          where: { userId: session.userId },
-        });
-      }
+      await tx.cartItem.deleteMany({
+        where: { userId: session.userId },
+      });
 
       return createdOrder;
     });

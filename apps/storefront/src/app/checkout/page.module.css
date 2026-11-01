@@ -35,6 +35,65 @@
   }
 }
 
+.customerBanner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-gold-soft);
+  border-radius: var(--radius-sm);
+  padding: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.customerBannerInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.customerBadge {
+  font-size: var(--text-caption);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-gold);
+  font-weight: 600;
+}
+
+.customerName {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  color: var(--color-forest);
+  font-weight: 600;
+  margin: 0;
+}
+
+.customerEmail {
+  font-size: var(--text-caption);
+  color: var(--color-ink);
+  margin: 0;
+}
+
+.switchAccountLink {
+  display: inline-block;
+  padding: 6px 14px;
+  background-color: transparent;
+  color: var(--color-forest);
+  border: 1px solid var(--color-forest);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-caption);
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all var(--duration-fast);
+}
+
+.switchAccountLink:hover {
+  background-color: var(--color-forest);
+  color: #ffffff;
+}
+
 .guestBanner {
   display: flex;
   justify-content: space-between;

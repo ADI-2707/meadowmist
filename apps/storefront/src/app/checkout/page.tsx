@@ -20,16 +20,22 @@ interface Address {
   isDefault: boolean;
 }
 
+interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string | null;
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const items = useCartStore((s) => s.items);
   const clearCart = useCartStore((s) => s.clearCart);
 
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>('');
   const [showNewAddress, setShowNewAddress] = useState(false);
-  const [isGuest, setIsGuest] = useState(false);
-  const [guestEmail, setGuestEmail] = useState('');
   const [newAddress, setNewAddress] = useState({
     fullName: '',
     phone: '',
@@ -70,36 +76,42 @@ export default function CheckoutPage() {
   }, []);
 
   useEffect(() => {
-    const fetchAddresses = async () => {
+    const initCheckout = async () => {
       setLoading(true);
       try {
-        const res = await fetch('/api/account/addresses');
-        if (!res.ok) {
-          setIsGuest(true);
-          setShowNewAddress(true);
+        const userRes = await fetch('/api/auth/me');
+        if (!userRes.ok) {
+          router.push('/login?redirect=/checkout');
           return;
         }
-        const data = await res.json();
-        if (data.addresses && data.addresses.length > 0) {
-          setAddresses(data.addresses);
-          const def = data.addresses.find((a: Address) => a.isDefault);
-          if (def) {
-            setSelectedAddressId(def.id);
+        const userData = await userRes.json();
+        if (!userData.user) {
+          router.push('/login?redirect=/checkout');
+          return;
+        }
+        setCurrentUser(userData.user);
+
+        const addrRes = await fetch('/api/account/addresses');
+        if (addrRes.ok) {
+          const addrData = await addrRes.json();
+          if (addrData.addresses && addrData.addresses.length > 0) {
+            setAddresses(addrData.addresses);
+            const def = addrData.addresses.find((a: Address) => a.isDefault);
+            setSelectedAddressId(def ? def.id : addrData.addresses[0].id);
           } else {
-            setSelectedAddressId(data.addresses[0].id);
+            setShowNewAddress(true);
           }
         } else {
           setShowNewAddress(true);
         }
       } catch {
-        setIsGuest(true);
-        setShowNewAddress(true);
+        router.push('/login?redirect=/checkout');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAddresses();
+    initCheckout();
   }, [router]);
 
   const handleApplyPromo = async () => {
@@ -164,29 +176,7 @@ export default function CheckoutPage() {
 
     let addressToUse: Address | undefined;
 
-    if (isGuest) {
-      const { fullName, phone, streetAddress, city, state, postalCode, apartment } = newAddress;
-      if (!guestEmail || !guestEmail.includes('@')) {
-        alert('Please provide a valid email address for order confirmation');
-        return;
-      }
-      if (!fullName || !phone || !streetAddress || !city || !state || !postalCode) {
-        alert('Please fill all required address fields');
-        return;
-      }
-      addressToUse = {
-        id: 'guest_addr',
-        fullName,
-        phone,
-        streetAddress,
-        apartment,
-        city,
-        state,
-        postalCode,
-        country: 'India',
-        isDefault: false,
-      };
-    } else if (showNewAddress || !selectedAddressId) {
+    if (showNewAddress || !selectedAddressId) {
       const created = await handleCreateNewAddress();
       if (!created) return;
       addressToUse = created;
@@ -228,8 +218,6 @@ export default function CheckoutPage() {
             postalCode: addressToUse.postalCode,
             country: addressToUse.country,
           },
-          guestEmail: isGuest ? guestEmail.trim() : undefined,
-          guestPhone: isGuest ? addressToUse.phone.trim() : undefined,
           paymentMethod,
           promoCode: appliedPromo?.code,
           customerNotes,
@@ -276,14 +264,15 @@ export default function CheckoutPage() {
 
         <div className={styles.layout}>
           <div>
-            {isGuest && (
-              <div className={styles.guestBanner}>
-                <div>
-                  <strong>Checking out as Guest</strong>
-                  <p>Want to track orders and save addresses for next time?</p>
+            {currentUser && (
+              <div className={styles.customerBanner}>
+                <div className={styles.customerBannerInfo}>
+                  <span className={styles.customerBadge}>Authenticated Customer</span>
+                  <p className={styles.customerName}>{currentUser.name}</p>
+                  <p className={styles.customerEmail}>{currentUser.email}</p>
                 </div>
-                <Link href="/login?redirect=/checkout" className={styles.guestSignInLink}>
-                  Sign In
+                <Link href="/login?redirect=/checkout" className={styles.switchAccountLink}>
+                  Switch Account
                 </Link>
               </div>
             )}
@@ -291,7 +280,7 @@ export default function CheckoutPage() {
             <div className={styles.sectionCard}>
               <h2 className={styles.sectionTitle}>1. Delivery Address</h2>
 
-              {!isGuest && !showNewAddress && addresses.length > 0 && (
+              {!showNewAddress && addresses.length > 0 && (
                 <div className={styles.addressList}>
                   {addresses.map((addr) => (
                     <label
@@ -318,7 +307,7 @@ export default function CheckoutPage() {
                 </div>
               )}
 
-              {!isGuest && (
+              {addresses.length > 0 && (
                 <button
                   type="button"
                   onClick={() => setShowNewAddress(!showNewAddress)}
@@ -328,20 +317,8 @@ export default function CheckoutPage() {
                 </button>
               )}
 
-              {(isGuest || showNewAddress) && (
+              {showNewAddress && (
                 <div className={styles.formGrid}>
-                  {isGuest && (
-                    <div className={`${styles.inputField} ${styles.formFull}`}>
-                      <label>Email Address (for order updates and receipts)</label>
-                      <input
-                        type="email"
-                        required
-                        value={guestEmail}
-                        onChange={(e) => setGuestEmail(e.target.value)}
-                        placeholder="collector@example.com"
-                      />
-                    </div>
-                  )}
                   <div className={styles.inputField}>
                     <label>Recipient Name</label>
                     <input
