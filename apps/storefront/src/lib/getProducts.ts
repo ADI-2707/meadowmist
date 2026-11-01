@@ -58,7 +58,7 @@ function formatDbProduct(p: DbProductPayload): Product {
   const reviewList = p.reviews || [];
   const reviewCount = reviewList.length;
   const ratingSum = reviewList.reduce((acc, r) => acc + r.rating, 0);
-  const averageRating = reviewCount > 0 ? Number((ratingSum / reviewCount).toFixed(1)) : 5;
+  const averageRating = reviewCount > 0 ? Number((ratingSum / reviewCount).toFixed(1)) : 0;
 
   return {
     id: p.id,

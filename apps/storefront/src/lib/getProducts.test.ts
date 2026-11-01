@@ -144,4 +144,16 @@ describe('Storefront getProducts Database-Driven Service', () => {
     });
     expect(featured).toHaveLength(1);
   });
+
+  it('formats product with 0 reviews as 0 average rating and 0 review count', async () => {
+    const unreviewedProduct = {
+      ...sampleDbProduct,
+      reviews: [],
+    };
+    vi.mocked(prisma.product.findMany).mockResolvedValue([unreviewedProduct] as any);
+
+    const result = await getProducts();
+    expect(result[0].reviewCount).toBe(0);
+    expect(result[0].averageRating).toBe(0);
+  });
 });
