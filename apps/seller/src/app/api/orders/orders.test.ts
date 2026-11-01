@@ -1,11 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GET as getOrders } from './route';
 import { GET as getOrderDetail, PATCH as patchOrder } from './[id]/route';
-import { getAdminSessionUser } from '@/lib/session';
+import { POST as postOrderReturn } from './[id]/return/route';
+import { getAdminSessionUser, getSessionUser } from '@/lib/session';
 import { prisma } from '@/lib/prisma';
 
 vi.mock('@/lib/session', () => ({
   getAdminSessionUser: vi.fn(),
+  getSessionUser: vi.fn(),
 }));
 
 vi.mock('@/lib/prisma', () => ({
@@ -14,6 +16,7 @@ vi.mock('@/lib/prisma', () => ({
       findMany: vi.fn(),
       count: vi.fn(),
       findFirst: vi.fn(),
+      findUnique: vi.fn(),
       update: vi.fn(),
     },
     product: {
@@ -165,5 +168,99 @@ describe('Seller Orders Management API Routes', () => {
     expect(body.order.status).toBe('CANCELLED');
     expect(prisma.$transaction).toHaveBeenCalled();
   });
-});
 
+  it('PATCH /api/orders/[id] updates returnStatus and records refund details', async () => {
+    vi.mocked(getAdminSessionUser).mockResolvedValue({
+      userId: 'admin_1',
+      email: 'artisan@meadowmist.in',
+      name: 'Artisan',
+      role: 'ADMIN',
+    });
+
+    vi.mocked(prisma.order.findFirst).mockResolvedValue({
+      id: 'ord_101',
+      orderNumber: 'MM-ORD-2026-101',
+      status: 'DELIVERED',
+      totalAmount: 1500,
+      items: [],
+    } as any);
+
+    vi.mocked(prisma.order.update).mockResolvedValue({
+      id: 'ord_101',
+      returnStatus: 'COMPLETED',
+      refundedAmount: 1500,
+      refundReason: 'Ceramic transit breakage verified',
+      paymentStatus: 'REFUNDED',
+    } as any);
+
+    const req = new Request('http://localhost:3001/api/orders/ord_101', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        returnStatus: 'COMPLETED',
+        refundedAmount: 1500,
+        refundReason: 'Ceramic transit breakage verified',
+      }),
+    });
+
+    const res = await patchOrder(req, mockContext);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.order.returnStatus).toBe('COMPLETED');
+    expect(body.order.refundedAmount).toBe(1500);
+    expect(body.order.paymentStatus).toBe('REFUNDED');
+  });
+
+  it('POST /api/orders/[id]/return allows admin to update return status to APPROVED', async () => {
+    vi.mocked(getAdminSessionUser).mockResolvedValue({
+      userId: 'admin_1',
+      email: 'artisan@meadowmist.in',
+      name: 'Artisan',
+      role: 'ADMIN',
+    });
+
+    vi.mocked(prisma.order.findUnique).mockResolvedValue({
+      id: 'ord_101',
+      status: 'DELIVERED',
+      returnReason: 'Transit Damage',
+      returnRequestedAt: new Date('2026-11-01T10:00:00Z'),
+    } as any);
+
+    vi.mocked(prisma.order.update).mockResolvedValue({
+      id: 'ord_101',
+      returnStatus: 'APPROVED',
+      returnReason: 'Transit Damage',
+    } as any);
+
+    const req = new Request('http://localhost:3001/api/orders/ord_101/return', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ returnStatus: 'APPROVED' }),
+    });
+
+    const res = await postOrderReturn(req, mockContext);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.order.returnStatus).toBe('APPROVED');
+    expect(prisma.order.update).toHaveBeenCalledWith({
+      where: { id: 'ord_101' },
+      data: expect.objectContaining({
+        returnStatus: 'APPROVED',
+      }),
+    });
+  });
+
+  it('POST /api/orders/[id]/return returns 401 when unauthenticated', async () => {
+    vi.mocked(getAdminSessionUser).mockResolvedValue(null);
+    vi.mocked(getSessionUser).mockResolvedValue(null);
+
+    const req = new Request('http://localhost:3001/api/orders/ord_101/return', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ returnStatus: 'APPROVED' }),
+    });
+
+    const res = await postOrderReturn(req, mockContext);
+    expect(res.status).toBe(401);
+  });
+});
