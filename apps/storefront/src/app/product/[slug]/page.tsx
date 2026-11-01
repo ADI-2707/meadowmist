@@ -80,12 +80,12 @@ export default async function ProductPage({ params }: Props) {
             <h1 className={styles.name}>{product.name}</h1>
 
             {product.averageRating !== undefined && product.reviewCount !== undefined && product.reviewCount > 0 && (
-              <div className={styles.ratingHeaderRow}>
+              <a href="#customer-reviews" className={styles.ratingHeaderRow}>
                 <StarRating rating={product.averageRating} />
                 <span className={styles.ratingHeaderText}>
                   {product.averageRating.toFixed(1)} ({product.reviewCount} {product.reviewCount === 1 ? 'review' : 'reviews'})
                 </span>
-              </div>
+              </a>
             )}
 
             <PriceTag price={product.price} salePrice={product.salePrice} />
@@ -129,7 +129,9 @@ export default async function ProductPage({ params }: Props) {
           </div>
         </div>
 
-        <ProductReviewsSection productId={product.id} productSlug={product.slug} />
+        <div id="customer-reviews" style={{ scrollMarginTop: "100px" }}>
+          <ProductReviewsSection productId={product.id} productSlug={product.slug} category={product.category} />
+        </div>
 
         {related.length > 0 && (
           <>

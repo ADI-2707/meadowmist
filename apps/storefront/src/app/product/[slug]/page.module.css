@@ -168,10 +168,23 @@
 }
 
 .ratingHeaderRow {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 8px;
   margin-top: calc(var(--space-2) * -1);
+  text-decoration: none;
+  cursor: pointer;
+  width: fit-content;
+  transition: opacity var(--duration-fast);
+}
+
+.ratingHeaderRow:hover {
+  opacity: 0.85;
+}
+
+.ratingHeaderRow:hover .ratingHeaderText {
+  text-decoration: underline;
+  color: var(--color-forest);
 }
 
 .ratingHeaderText {

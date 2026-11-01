@@ -10,6 +10,7 @@ import styles from './ProductReviewsSection.module.css';
 interface ProductReviewsSectionProps {
   productId: string;
   productSlug: string;
+  category?: string;
 }
 
 export default function ProductReviewsSection({
