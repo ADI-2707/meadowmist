@@ -16,6 +16,8 @@ import {
   ChevronRight,
   X,
 } from 'lucide-react';
+import sellerPkg from '../../../package.json';
+import storefrontPkg from '../../../../storefront/package.json';
 import styles from './Sidebar.module.css';
 
 export interface NavItem {
@@ -178,6 +180,22 @@ export function Sidebar({
             <ExternalLink size={14} />
             {(!collapsed || mobileOpen) && <span>View Storefront</span>}
           </a>
+
+          {(!collapsed || mobileOpen) ? (
+            <div className={styles.versionInfo} data-testid="sidebar-version-info">
+              <span>Portal v{sellerPkg.version}</span>
+              <span className={styles.versionDot}>·</span>
+              <span>Store v{storefrontPkg.version}</span>
+            </div>
+          ) : (
+            <div
+              className={styles.versionInfoCollapsed}
+              data-testid="sidebar-version-collapsed"
+              title={`Portal v${sellerPkg.version} · Store v${storefrontPkg.version}`}
+            >
+              v{sellerPkg.version}
+            </div>
+          )}
         </div>
       </aside>
     </>

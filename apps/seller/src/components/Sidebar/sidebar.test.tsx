@@ -132,4 +132,33 @@ describe('Seller Sidebar Component Rendering & Interactions', () => {
     fireEvent.click(closeBtn);
     expect(onCloseMobile).toHaveBeenCalledTimes(1);
   });
+
+  it('renders portal and store versions in sidebar footer when expanded and collapsed', () => {
+    const { rerender } = render(
+      <Sidebar
+        collapsed={false}
+        onToggleCollapse={onToggleCollapse}
+        mobileOpen={false}
+        onCloseMobile={onCloseMobile}
+      />
+    );
+
+    const versionInfo = screen.getByTestId('sidebar-version-info');
+    expect(versionInfo).toBeDefined();
+    expect(versionInfo.textContent).toContain('Portal v');
+    expect(versionInfo.textContent).toContain('Store v');
+
+    rerender(
+      <Sidebar
+        collapsed={true}
+        onToggleCollapse={onToggleCollapse}
+        mobileOpen={false}
+        onCloseMobile={onCloseMobile}
+      />
+    );
+
+    const versionCollapsed = screen.getByTestId('sidebar-version-collapsed');
+    expect(versionCollapsed).toBeDefined();
+    expect(versionCollapsed.textContent).toContain('v');
+  });
 });
