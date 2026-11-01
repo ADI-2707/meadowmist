@@ -36,6 +36,13 @@ describe('Seller Admin Proxy RBAC Guard', () => {
     expect(res.status).toBe(200);
   });
 
+  it('allows unauthenticated request to /api/health for keep-alive monitoring', async () => {
+    const req = createMockRequest('/api/health');
+    const res = await proxy(req);
+
+    expect(res.status).toBe(200);
+  });
+
   it('redirects unauthenticated user attempting /orders to /login', async () => {
     const req = createMockRequest('/orders');
     const res = await proxy(req);
@@ -100,4 +107,3 @@ describe('Seller Admin Proxy RBAC Guard', () => {
     expect(res.status).toBe(200);
   });
 });
-
