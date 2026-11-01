@@ -1,12 +1,18 @@
+.summaryContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6, 24px);
+  background: var(--color-surface, #FDFBF7);
+  border: 1px solid var(--color-parchment-deep, #e6ded3);
+  border-radius: 12px;
+  padding: 24px;
+}
+
 .summaryBox {
   display: grid;
   grid-template-columns: 200px 1fr;
   gap: 32px;
   align-items: center;
-  background: var(--color-surface, #FDFBF7);
-  border: 1px solid var(--color-parchment-deep, #e6ded3);
-  border-radius: 12px;
-  padding: 24px;
 }
 
 .scoreColumn {
@@ -34,22 +40,52 @@
   margin-top: 6px;
 }
 
+.clearFilterBtn {
+  margin-top: 8px;
+  font-size: 0.75rem;
+  color: var(--color-forest, #1b4332);
+  background: none;
+  border: none;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
 .barsColumn {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.barRow {
+.barRowBtn {
   display: flex;
   align-items: center;
   gap: 12px;
   font-size: 0.85rem;
+  width: 100%;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 4px 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+  color: inherit;
+}
+
+.barRowBtn:hover {
+  background: rgba(27, 67, 50, 0.04);
+}
+
+.activeRow {
+  background: rgba(27, 67, 50, 0.08);
+  border-color: var(--color-forest, #1b4332);
 }
 
 .starLabel {
-  width: 50px;
+  width: 55px;
   color: var(--color-ink-muted, #7A7265);
+  font-weight: 500;
 }
 
 .barTrack {
@@ -67,11 +103,78 @@
   transition: width 0.3s ease;
 }
 
+.barFillActive {
+  background: var(--color-forest, #1b4332);
+}
+
+.percentageLabel {
+  width: 36px;
+  text-align: right;
+  color: var(--color-ink-muted, #7A7265);
+  font-size: 0.8rem;
+}
+
 .countLabel {
   width: 28px;
   text-align: right;
   color: var(--color-ink-muted, #7A7265);
   font-size: 0.8rem;
+}
+
+.aspectSection {
+  border-top: 1px solid var(--color-parchment-deep, #e6ded3);
+  padding-top: 18px;
+}
+
+.aspectTitle {
+  font-family: var(--font-display, serif);
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-espresso, #2b2118);
+  margin: 0 0 12px 0;
+}
+
+.aspectGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.aspectCard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.aspectHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.aspectName {
+  font-weight: 500;
+  color: var(--color-espresso, #2b2118);
+}
+
+.aspectScoreValue {
+  font-weight: 600;
+  color: var(--color-forest, #1b4332);
+}
+
+.aspectTrack {
+  height: 6px;
+  background: var(--color-parchment-deep, #e8dfd3);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.aspectFill {
+  height: 100%;
+  background: var(--color-forest, #1b4332);
+  border-radius: 3px;
+  transition: width 0.3s ease;
 }
 
 @media (max-width: 640px) {
@@ -85,5 +188,9 @@
     border-bottom: 1px solid var(--color-parchment-deep, #e6ded3);
     padding-right: 0;
     padding-bottom: 20px;
+  }
+
+  .aspectGrid {
+    grid-template-columns: 1fr;
   }
 }
