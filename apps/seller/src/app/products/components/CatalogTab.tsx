@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { PlusCircle, Search, Trash2, Edit } from 'lucide-react';
+import { PlusCircle, Search, Trash2, Edit, Download, Upload } from 'lucide-react';
 import { StockBadge, BadgeStatus } from '@/components/StockBadge/StockBadge';
 import { Pagination } from '@/components/Pagination/Pagination';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -31,6 +31,7 @@ export function CatalogTab() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [importing, setImporting] = useState(false);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
   const [total, setTotal] = useState(0);
@@ -91,6 +92,37 @@ export function CatalogTab() {
     }
   };
 
+  const handleImportCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImporting(true);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch('/api/products/import', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        alert(
+          `Import successful! Processed ${data.totalProcessed} products (${data.createdCount} added, ${data.updatedCount} updated).`
+        );
+        fetchProducts();
+      } else {
+        alert(data.error || 'Failed to import CSV');
+      }
+    } catch {
+      alert('Error uploading and parsing CSV file');
+    } finally {
+      setImporting(false);
+      e.target.value = '';
+    }
+  };
+
   const getStockStatus = (qty: number, threshold: number, inStock: boolean): BadgeStatus => {
     if (!inStock || qty <= 0) return 'out-of-stock';
     if (qty <= threshold) return 'low-stock';
@@ -99,7 +131,26 @@ export function CatalogTab() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
-      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
+        <a
+          href="/api/products/export"
+          download="meadow-mist-catalog-export.csv"
+          className={styles.secondaryBtn}
+        >
+          <Download size={16} />
+          <span>Export CSV</span>
+        </a>
+        <label className={styles.secondaryBtn}>
+          <Upload size={16} />
+          <span>{importing ? 'Importing...' : 'Import CSV'}</span>
+          <input
+            type="file"
+            accept=".csv"
+            disabled={importing}
+            onChange={handleImportCSV}
+            style={{ display: 'none' }}
+          />
+        </label>
         <Link href="/products/new" className={styles.addBtn}>
           <PlusCircle size={16} />
           <span>Add New Product</span>
@@ -160,9 +211,9 @@ export function CatalogTab() {
                   <th>Product</th>
                   <th>Category</th>
                   <th>Price</th>
-                  <th>Inventory</th>
+                  <th>Stock</th>
                   <th>Badge</th>
-                  <th>Status</th>
+                  <th>Store Visibility</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -172,27 +223,15 @@ export function CatalogTab() {
                   try {
                     parsedImages = JSON.parse(p.images);
                   } catch {
-                    parsedImages = ['/images/placeholder.jpg'];
+                    parsedImages = [p.images];
                   }
-                  const thumb = parsedImages[0] || '/images/placeholder.jpg';
+                  const thumb = parsedImages[0] || '/candle.jpg';
 
                   return (
                     <tr key={p.id}>
                       <td>
                         <div className={styles.productCell}>
-                          <div
-                            className={styles.thumbWrapper}
-                            style={{
-                              position: 'relative',
-                              width: 44,
-                              height: 44,
-                              minWidth: 44,
-                              minHeight: 44,
-                              borderRadius: 'var(--radius-sm)',
-                              overflow: 'hidden',
-                              flexShrink: 0,
-                            }}
-                          >
+                          <div className={styles.productThumb}>
                             <Image
                               src={thumb}
                               alt={p.name}
