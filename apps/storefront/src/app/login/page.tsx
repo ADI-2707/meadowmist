@@ -90,9 +90,14 @@ function LoginForm() {
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="password">
-              Password
-            </label>
+            <div className={styles.labelRow}>
+              <label className={styles.label} htmlFor="password">
+                Password
+              </label>
+              <Link href="/forgot-password" className={styles.forgotLink}>
+                Forgot password?
+              </Link>
+            </div>
             <input
               id="password"
               type="password"
