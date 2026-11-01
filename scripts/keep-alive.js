@@ -51,3 +51,4 @@ ping();
 
 // Recurring interval
 setInterval(ping, INTERVAL_MS);
+

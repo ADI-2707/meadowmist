@@ -26,3 +26,4 @@ jobs:
           curl -sS -f --max-time 10 https://meadowmist-seller.vercel.app/api/health || echo "Seller ping failed or timed out"
           echo ""
           echo "Keep-alive ping finished."
+

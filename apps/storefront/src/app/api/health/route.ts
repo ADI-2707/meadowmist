@@ -53,3 +53,4 @@ export async function GET() {
 export async function HEAD() {
   return GET();
 }
+
