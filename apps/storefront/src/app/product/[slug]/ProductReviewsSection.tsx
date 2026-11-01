@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import RatingSummary from '@/components/RatingSummary/RatingSummary';
+import CustomerPhotosGallery from '@/components/CustomerPhotosGallery';
+import ReviewFilterBar, { ReviewFilters } from '@/components/ReviewFilterBar';
 import ReviewForm from '@/components/ReviewForm/ReviewForm';
 import ReviewList from '@/components/ReviewList/ReviewList';
-import type { Review, RatingDistribution } from '@meadowmist/shared';
+import type { Review, RatingDistribution, AspectScore } from '@meadowmist/shared';
 import styles from './ProductReviewsSection.module.css';
 
 interface ProductReviewsSectionProps {
@@ -15,49 +17,110 @@ interface ProductReviewsSectionProps {
 
 export default function ProductReviewsSection({
   productId,
+  productSlug,
+  category,
 }: ProductReviewsSectionProps) {
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [customerPhotos, setCustomerPhotos] = useState<string[]>([]);
+  const [aspectScores, setAspectScores] = useState<AspectScore[]>([]);
   const [distribution, setDistribution] = useState<RatingDistribution>({
     average: 0,
     total: 0,
     counts: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
   });
+  const [filters, setFilters] = useState<ReviewFilters>({
+    sort: 'recent',
+    rating: null,
+    verified: false,
+    withPhotos: false,
+    search: '',
+  });
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const fetchReviews = useCallback(async () => {
+  const fetchAuth = useCallback(async () => {
     try {
-      const [revRes, userRes] = await Promise.all([
-        fetch(`/api/products/${productId}/reviews`),
-        fetch('/api/auth/me'),
-      ]);
+      const res = await fetch('/api/auth/me');
+      if (res.ok) {
+        const data = await res.json();
+        setIsLoggedIn(Boolean(data.user));
+      }
+    } catch {}
+  }, []);
 
-      if (revRes.ok) {
-        const data = await revRes.json();
-        setReviews(data.reviews || []);
-        if (data.distribution) {
-          setDistribution(data.distribution);
+  const fetchReviews = useCallback(
+    async (currentFilters: ReviewFilters) => {
+      try {
+        const params = new URLSearchParams();
+        if (currentFilters.sort) params.set('sort', currentFilters.sort);
+        if (currentFilters.rating !== null) params.set('rating', String(currentFilters.rating));
+        if (currentFilters.verified) params.set('verified', 'true');
+        if (currentFilters.withPhotos) params.set('withPhotos', 'true');
+        if (currentFilters.search.trim()) params.set('search', currentFilters.search.trim());
+
+        const query = params.toString();
+        const url = `/api/products/${productId}/reviews${query ? `?${query}` : ''}`;
+        const res = await fetch(url);
+
+        if (res.ok) {
+          const data = await res.json();
+          setReviews(data.reviews || []);
+          if (data.distribution) {
+            setDistribution(data.distribution);
+          }
+          if (Array.isArray(data.customerPhotos)) {
+            setCustomerPhotos(data.customerPhotos);
+          }
+          if (data.aspectScores) {
+            const list = Array.isArray(data.aspectScores)
+              ? data.aspectScores
+              : Object.values(data.aspectScores);
+            setAspectScores(list as AspectScore[]);
+          }
         }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
       }
-
-      if (userRes.ok) {
-        const userData = await userRes.json();
-        setIsLoggedIn(Boolean(userData.user));
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [productId]);
+    },
+    [productId]
+  );
 
   useEffect(() => {
-    fetchReviews();
-  }, [fetchReviews]);
+    fetchAuth();
+  }, [fetchAuth]);
+
+  useEffect(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      fetchReviews(filters);
+    }, 200);
+
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [fetchReviews, filters]);
+
+  const handleSelectRating = (star: number | null) => {
+    setFilters((prev) => ({
+      ...prev,
+      rating: star,
+    }));
+  };
 
   const handleReviewSubmitted = (newReview: Review) => {
     setReviews((prev) => [newReview, ...prev]);
+    if (newReview.images && newReview.images.length > 0) {
+      setCustomerPhotos((prev) => [...newReview.images!, ...prev]);
+    }
     setDistribution((prev) => {
       const newTotal = prev.total + 1;
       const newCounts = {
@@ -75,6 +138,7 @@ export default function ProductReviewsSection({
       };
     });
     setShowForm(false);
+    fetchReviews(filters);
   };
 
   if (loading) {
@@ -97,17 +161,36 @@ export default function ProductReviewsSection({
         </button>
       </div>
 
-      {distribution.total > 0 && <RatingSummary distribution={distribution} />}
+      {customerPhotos.length > 0 && (
+        <CustomerPhotosGallery photos={customerPhotos} reviews={reviews} />
+      )}
+
+      {distribution.total > 0 && (
+        <RatingSummary
+          distribution={distribution}
+          selectedRating={filters.rating}
+          onSelectRating={handleSelectRating}
+          aspectScores={aspectScores.length > 0 ? aspectScores : distribution.aspectScores}
+        />
+      )}
 
       {showForm && (
         <ReviewForm
           productId={productId}
+          productSlug={productSlug}
+          category={category}
           isLoggedIn={isLoggedIn}
           onReviewSubmitted={handleReviewSubmitted}
         />
       )}
 
-      <ReviewList reviews={reviews} />
+      <ReviewFilterBar
+        filters={filters}
+        onChange={setFilters}
+        totalCount={reviews.length}
+      />
+
+      <ReviewList reviews={reviews} productId={productId} />
     </section>
   );
 }
