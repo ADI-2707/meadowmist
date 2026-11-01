@@ -70,7 +70,7 @@ Built with **Next.js 16 (App Router)**, **TypeScript**, **Vanilla CSS Modules**,
 ## 📁 Directory Structure
 
 ```
-meedow_mist/
+meadow_mist/
 ├── public/
 │   └── images/
 │       ├── logo.jpg               # Official brand emblem logo
@@ -114,8 +114,8 @@ meedow_mist/
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/ADI-2707/meedowmist.git
-cd meedow_mist
+git clone https://github.com/ADI-2707/meadowmist.git
+cd meadow_mist
 ```
 
 ### 2. Install dependencies
