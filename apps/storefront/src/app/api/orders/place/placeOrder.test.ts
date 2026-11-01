@@ -25,7 +25,7 @@ describe('Place Order API Route', () => {
     postalCode: '560001',
   };
 
-  it('returns 401 when user is not authenticated', async () => {
+  it('returns 400 when guest email is missing or invalid for unauthenticated order', async () => {
     vi.mocked(getSessionUser).mockResolvedValue(null);
 
     const req = new Request('http://localhost:3000/api/orders/place', {
@@ -35,9 +35,75 @@ describe('Place Order API Route', () => {
     });
 
     const res = await POST(req);
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body.error).toBe('Please sign in to place your order');
+    expect(body.error).toBe('Please provide a valid contact email for guest checkout');
+  });
+
+  it('successfully places an order as a guest without user session', async () => {
+    vi.mocked(getSessionUser).mockResolvedValue(null);
+
+    let capturedCreateData: any = null;
+    const deleteManyMock = vi.fn();
+
+    vi.mocked(prisma.$transaction).mockImplementation(async (callback: any) => {
+      const mockTx = {
+        product: {
+          findUnique: vi.fn()
+            .mockResolvedValueOnce({
+              id: 'p1',
+              name: 'Amber Candle',
+              price: 899,
+              isActive: true,
+              stockQuantity: 10,
+              images: '["/amber.jpg"]',
+            })
+            .mockResolvedValueOnce({
+              stockQuantity: 9,
+            }),
+          updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+          update: vi.fn(),
+        },
+        inventoryLog: {
+          create: vi.fn().mockResolvedValue({ id: 'log_guest' }),
+        },
+        storeSettings: {
+          findUnique: vi.fn().mockResolvedValue({
+            shippingFlatRate: 99,
+            freeShippingThreshold: 1499,
+          }),
+        },
+        order: {
+          create: vi.fn().mockImplementation(async (args) => {
+            capturedCreateData = args.data;
+            return { id: 'order_guest_1', ...args.data };
+          }),
+        },
+        cartItem: {
+          deleteMany: deleteManyMock,
+        },
+      };
+      return callback(mockTx as any);
+    });
+
+    const req = new Request('http://localhost:3000/api/orders/place', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        items: [{ productId: 'p1', qty: 1 }],
+        shippingAddress: validAddress,
+        guestEmail: 'meera@example.com',
+        guestPhone: '+91 9876543210',
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(201);
+    expect(capturedCreateData.isGuest).toBe(true);
+    expect(capturedCreateData.userId).toBeNull();
+    expect(capturedCreateData.guestEmail).toBe('meera@example.com');
+    expect(capturedCreateData.guestPhone).toBe('+91 9876543210');
+    expect(deleteManyMock).not.toHaveBeenCalled();
   });
 
   it('returns 400 when items array is missing or empty', async () => {
