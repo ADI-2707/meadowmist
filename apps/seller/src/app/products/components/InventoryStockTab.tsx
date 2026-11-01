@@ -16,6 +16,16 @@ interface ProductInventory {
   stockQuantity: number;
   lowStockThreshold: number;
   inStock: boolean;
+  variants?: Array<{
+    id: string;
+    sku: string;
+    name: string;
+    stockQuantity: number;
+    inStock: boolean;
+  }>;
+  _count?: {
+    restockAlerts?: number;
+  };
 }
 
 interface Summary {
@@ -102,51 +112,69 @@ export function InventoryStockTab() {
           productId: id,
           newQuantity: newQty,
           reason: 'MANUAL_ADJUSTMENT',
-          note: 'Updated from inventory grid',
         }),
       });
 
       if (res.ok) {
-        fetchData();
-      } else {
-        alert('Failed to update stock');
+        setProducts((prev) =>
+          prev.map((p) =>
+            p.id === id
+              ? {
+                  ...p,
+                  stockQuantity: newQty,
+                  inStock: newQty > 0,
+                }
+              : p
+          )
+        );
       }
-    } catch {
-      alert('Error updating stock');
+    } catch (err) {
+      console.error('Save stock error:', err);
     } finally {
       setSavingId(null);
     }
   };
 
-  const getStockStatus = (qty: number, threshold: number, inStock: boolean): BadgeStatus => {
+  const getStockStatus = (
+    qty: number,
+    threshold: number,
+    inStock: boolean
+  ): BadgeStatus => {
     if (!inStock || qty <= 0) return 'out-of-stock';
     if (qty <= threshold) return 'low-stock';
     return 'in-stock';
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
-      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+    <div>
+      <div className={styles.sectionHeader}>
+        <div>
+          <h2 className={styles.sectionTitle}>Artisan Studio Inventory</h2>
+          <p className={styles.sectionDesc}>
+            Manage small-batch workshop levels and keep stock aligned with direct customer orders.
+          </p>
+        </div>
         <button
           type="button"
-          onClick={() => fetchData(page, limit)}
+          onClick={() => fetchData()}
           className={styles.refreshBtn}
+          title="Refresh inventory"
         >
-          <RefreshCw size={15} />
-          <span>Refresh Counts</span>
+          <RefreshCw size={16} />
+          Sync Stock
         </button>
       </div>
 
       {summary && (
-        <div className={styles.summaryGrid}>
+        <div className={styles.statsGrid}>
           <StatCard
-            label="Candles in Stock"
-            value={`${summary.totalCandles} pcs`}
+            label="Hand-Poured Candles"
+            value={summary.totalCandles}
             icon={Flame}
           />
           <StatCard
-            label="Ceramics in Studio"
-            value={`${summary.totalCeramics} pcs`}
+            label="Handcrafted Ceramics"
+            value={summary.totalCeramics}
             icon={Layers}
           />
           <StatCard
@@ -215,6 +243,7 @@ export function InventoryStockTab() {
                   <th>Category</th>
                   <th>Unit Price</th>
                   <th>Status</th>
+                  <th>Customer Demand</th>
                   <th>Adjust Batch Stock</th>
                   <th>Commit</th>
                 </tr>
@@ -231,6 +260,11 @@ export function InventoryStockTab() {
                         <Link href={`/products/${p.id}/edit`} className={styles.productName}>
                           {p.name}
                         </Link>
+                        {p.variants && p.variants.length > 0 && (
+                          <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '4px' }}>
+                            {p.variants.length} SKU variants: {p.variants.map((v) => `${v.name} (${v.stockQuantity})`).join(' · ')}
+                          </div>
+                        )}
                       </td>
                       <td>
                         <span className={styles.categoryPill}>
@@ -246,6 +280,27 @@ export function InventoryStockTab() {
                             p.inStock
                           )}
                         />
+                      </td>
+                      <td>
+                        {p._count?.restockAlerts && p._count.restockAlerts > 0 ? (
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              padding: '3px 8px',
+                              borderRadius: '12px',
+                              backgroundColor: '#fef3c7',
+                              color: '#92400e',
+                              fontSize: '0.8rem',
+                              fontWeight: 600,
+                            }}
+                          >
+                            🔔 {p._count.restockAlerts} waiting
+                          </span>
+                        ) : (
+                          <span style={{ opacity: 0.4, fontSize: '0.8rem' }}>None</span>
+                        )}
                       </td>
                       <td>
                         <div className={styles.stockControl}>
