@@ -76,3 +76,4 @@ describe('Forgot Password API Route', () => {
     expect(prisma.passwordResetToken.create).not.toHaveBeenCalled();
   });
 });
+
