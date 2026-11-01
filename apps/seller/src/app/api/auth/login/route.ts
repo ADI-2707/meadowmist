@@ -2,7 +2,11 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { comparePassword } from '@/lib/password';
 import { signToken } from '@/lib/auth';
-import { setAdminSessionCookie, setTrustedDeviceCookie } from '@/lib/session';
+import {
+  setAdminSessionCookie,
+  setTrustedDeviceCookie,
+  getTrustedDeviceToken,
+} from '@/lib/session';
 import {
   checkLoginAttempt,
   recordFailedAttempt,
@@ -10,6 +14,9 @@ import {
   verifyTurnstileToken,
   generateDeviceToken,
   calculateDeviceExpiry,
+  hashDeviceToken,
+  isDeviceExpired,
+  verifyTotpCode,
 } from '@meadowmist/shared';
 
 function getClientIp(request: Request): string {
@@ -23,7 +30,7 @@ function getClientIp(request: Request): string {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, password, turnstileToken } = body;
+    const { email, password, turnstileToken, totpCode } = body;
 
     if (!email || !password) {
       return NextResponse.json(
@@ -122,6 +129,49 @@ export async function POST(request: Request) {
       );
     }
 
+    if (user.twoFactorEnabled) {
+      const rawDeviceToken = await getTrustedDeviceToken();
+      let isTrusted = false;
+
+      if (rawDeviceToken && prisma.trustedDevice) {
+        try {
+          const deviceHash = hashDeviceToken(rawDeviceToken);
+          const trusted = await prisma.trustedDevice.findUnique({
+            where: { deviceHash },
+          });
+
+          if (trusted && trusted.userId === user.id && !isDeviceExpired(trusted.expiresAt)) {
+            isTrusted = true;
+          }
+        } catch {}
+      }
+
+      if (!isTrusted) {
+        if (!totpCode) {
+          return NextResponse.json({
+            require2FA: true,
+            email: user.email,
+          });
+        }
+
+        const cleanTotp = String(totpCode).trim();
+        const isTotpValid = user.twoFactorSecret
+          ? verifyTotpCode(user.twoFactorSecret, cleanTotp)
+          : false;
+
+        if (!isTotpValid) {
+          const failure = recordFailedAttempt(ip, normalizedEmail);
+          return NextResponse.json(
+            {
+              error: 'Invalid two-factor authentication code',
+              requireStepUp: failure.requireStepUp,
+            },
+            { status: 401 }
+          );
+        }
+      }
+    }
+
     resetFailedAttempts(ip, normalizedEmail);
 
     const token = await signToken(
@@ -153,7 +203,7 @@ export async function POST(request: Request) {
             deviceHash: tokenHash,
             lastIp: ip,
             userAgent: request.headers.get('user-agent') || null,
-            expiresAt: calculateDeviceExpiry(30),
+            expiresAt: calculateDeviceExpiry(60),
           },
         });
       } catch {}
