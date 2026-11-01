@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useCartStore } from '@/store/cartStore';
 import type { Product } from '@/types/product';
 import RestockAlert from '@/components/RestockAlert';
