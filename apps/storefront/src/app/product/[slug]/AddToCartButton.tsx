@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useCartStore } from '@/store/cartStore';
 import type { Product } from '@/types/product';
+import RestockAlert from '@/components/RestockAlert';
 import styles from './AddToCartButton.module.css';
 
 interface Props {
@@ -216,6 +217,15 @@ export default function AddToCartButton({ product }: Props) {
         >
           {isOutOfStock ? 'Sold Out' : 'Add to bag'}
         </button>
+      )}
+
+      {isOutOfStock && (
+        <RestockAlert
+          productId={product.id}
+          productName={product.name}
+          variantId={selectedVariant?.id}
+          variantName={selectedVariant?.name}
+        />
       )}
     </div>
   );
