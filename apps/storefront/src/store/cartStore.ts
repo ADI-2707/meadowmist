@@ -5,6 +5,8 @@ import { persist } from 'zustand/middleware';
 
 export interface CartItem {
   productId: string;
+  variantId?: string | null;
+  sku?: string;
   slug: string;
   name: string;
   price: number;
@@ -32,8 +34,8 @@ interface CartStore {
   isDrawerOpen: boolean;
   toast: ToastInfo | null;
   addItem: (item: Omit<CartItem, 'qty'>) => void;
-  removeItem: (productId: string) => void;
-  updateQty: (productId: string, qty: number) => void;
+  removeItem: (productId: string, variantId?: string | null) => void;
+  updateQty: (productId: string, qty: number, variantId?: string | null) => void;
   clearCart: () => void;
   clearToast: () => void;
   openDrawer: () => void;
@@ -55,11 +57,13 @@ export const useCartStore = create<CartStore>()(
       toast: null,
 
       addItem: (item) => {
-        const existing = get().items.find((i) => i.productId === item.productId);
+        const existing = get().items.find(
+          (i) => i.productId === item.productId && (item.variantId ? i.variantId === item.variantId : !i.variantId)
+        );
         let updatedItems: CartItem[];
         if (existing) {
           updatedItems = get().items.map((i) =>
-            i.productId === item.productId
+            i === existing
               ? {
                   ...i,
                   qty: i.qty + 1,
@@ -90,9 +94,13 @@ export const useCartStore = create<CartStore>()(
         });
       },
 
-      removeItem: (productId) => {
-        const existing = get().items.find((i) => i.productId === productId);
-        const updatedItems = get().items.filter((i) => i.productId !== productId);
+      removeItem: (productId, variantId) => {
+        const existing = get().items.find(
+          (i) => i.productId === productId && (variantId !== undefined ? i.variantId === variantId : true)
+        );
+        const updatedItems = get().items.filter(
+          (i) => !(i.productId === productId && (variantId !== undefined ? i.variantId === variantId : true))
+        );
         set({
           items: updatedItems,
           itemCount: updatedItems.reduce((sum, i) => sum + i.qty, 0),
@@ -114,17 +122,21 @@ export const useCartStore = create<CartStore>()(
         }
       },
 
-      updateQty: (productId, qty) => {
-        const existing = get().items.find((i) => i.productId === productId);
+      updateQty: (productId, qty, variantId) => {
+        const existing = get().items.find(
+          (i) => i.productId === productId && (variantId !== undefined ? i.variantId === variantId : true)
+        );
         if (!existing) return;
 
         if (qty <= 0) {
-          get().removeItem(productId);
+          get().removeItem(productId, variantId);
           return;
         }
 
         const isIncrease = qty > existing.qty;
-        const updatedItems = get().items.map((i) => (i.productId === productId ? { ...i, qty } : i));
+        const updatedItems = get().items.map((i) =>
+          i === existing ? { ...i, qty } : i
+        );
         set({
           items: updatedItems,
           itemCount: updatedItems.reduce((sum, i) => sum + i.qty, 0),

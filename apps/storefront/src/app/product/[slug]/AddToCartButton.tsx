@@ -14,6 +14,10 @@ export default function AddToCartButton({ product }: Props) {
   const addItem = useCartStore((s) => s.addItem);
   const updateQty = useCartStore((s) => s.updateQty);
 
+  const variants = product.variants || [];
+  const [selectedVariantId, setSelectedVariantId] = useState<string>(variants.length > 0 ? variants[0].id : '');
+  const selectedVariant = variants.find((v) => v.id === selectedVariantId);
+
   const fragrances = product.customOptions?.fragrances || [];
   const waxTones = product.customOptions?.waxTones || [];
   const sizes = product.customOptions?.sizes || [];
@@ -25,10 +29,17 @@ export default function AddToCartButton({ product }: Props) {
   const [customNotes, setCustomNotes] = useState<string>('');
   const [isClickLocked, setIsClickLocked] = useState(false);
 
-  const cartItem = items.find((i) => i.productId === product.id);
+  const currentPrice = selectedVariant?.salePrice ?? selectedVariant?.price ?? product.salePrice ?? product.price;
+  const isOutOfStock = selectedVariant
+    ? (!selectedVariant.inStock || selectedVariant.stockQuantity <= 0)
+    : (!product.inStock || (product.stockQuantity !== undefined && product.stockQuantity <= 0));
+  const currentStockQty = selectedVariant ? selectedVariant.stockQuantity : product.stockQuantity;
+  const isLowStock = currentStockQty !== undefined && currentStockQty > 0 && currentStockQty <= (product.lowStockThreshold || 5);
+
+  const cartItem = items.find(
+    (i) => i.productId === product.id && (selectedVariant ? i.variantId === selectedVariant.id : !i.variantId)
+  );
   const qty = cartItem?.qty ?? 0;
-  const isOutOfStock = !product.inStock || (product.stockQuantity !== undefined && product.stockQuantity <= 0);
-  const isLowStock = product.stockQuantity !== undefined && product.stockQuantity > 0 && product.stockQuantity <= (product.lowStockThreshold || 5);
 
   const handleAdd = () => {
     if (isOutOfStock || isClickLocked) return;
@@ -39,9 +50,11 @@ export default function AddToCartButton({ product }: Props) {
 
     addItem({
       productId: product.id,
+      variantId: selectedVariant?.id,
+      sku: selectedVariant?.sku,
       slug: product.slug,
-      name: product.name,
-      price: product.salePrice ?? product.price,
+      name: selectedVariant ? `${product.name} - ${selectedVariant.name}` : product.name,
+      price: currentPrice,
       image: product.images[0],
       category: product.category,
       selectedFragrance: selectedFragrance || undefined,
@@ -53,13 +66,29 @@ export default function AddToCartButton({ product }: Props) {
 
   return (
     <div style={{ width: '100%' }}>
+      {variants.length > 0 && (
+        <div className={styles.variantPriceBar}>
+          <div className={styles.variantPrice}>
+            ₹{currentPrice.toLocaleString('en-IN')}
+            {selectedVariant?.salePrice && selectedVariant.price && (
+              <span style={{ fontSize: '0.9rem', textDecoration: 'line-through', opacity: 0.6, marginLeft: 8 }}>
+                ₹{selectedVariant.price.toLocaleString('en-IN')}
+              </span>
+            )}
+          </div>
+          {selectedVariant?.sku && (
+            <span className={styles.variantSku}>SKU: {selectedVariant.sku}</span>
+          )}
+        </div>
+      )}
+
       {isOutOfStock ? (
         <div className={`${styles.stockStatus} ${styles.lowStock}`}>
           Currently Out of Stock — Next small batch in progress
         </div>
       ) : isLowStock ? (
         <div className={`${styles.stockStatus} ${styles.lowStock}`}>
-          Only {product.stockQuantity} pieces left in this run
+          Only {currentStockQty} pieces left in this run
         </div>
       ) : (
         <div className={`${styles.stockStatus} ${styles.inStock}`}>
@@ -67,8 +96,26 @@ export default function AddToCartButton({ product }: Props) {
         </div>
       )}
 
-      {(fragrances.length > 0 || waxTones.length > 0 || sizes.length > 0 || allowGiftMessage) && (
+      {(variants.length > 0 || fragrances.length > 0 || waxTones.length > 0 || sizes.length > 0 || allowGiftMessage) && (
         <div className={styles.customSection}>
+          {variants.length > 0 && (
+            <div className={styles.optionGroup}>
+              <span className={styles.optionTitle}>Select Edition / Size</span>
+              <div className={styles.pills}>
+                {variants.map((v) => (
+                  <button
+                    key={v.id}
+                    type="button"
+                    className={`${styles.pill} ${selectedVariantId === v.id ? styles.pillActive : ''}`}
+                    onClick={() => setSelectedVariantId(v.id)}
+                  >
+                    {v.name} {!v.inStock || v.stockQuantity <= 0 ? '(Sold Out)' : ''}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {fragrances.length > 0 && (
             <div className={styles.optionGroup}>
               <span className={styles.optionTitle}>Select Scent</span>
@@ -143,7 +190,7 @@ export default function AddToCartButton({ product }: Props) {
           <button
             type="button"
             className={styles.qtyBtn}
-            onClick={() => updateQty(product.id, qty - 1)}
+            onClick={() => updateQty(product.id, qty - 1, selectedVariant?.id)}
             aria-label="Decrease quantity"
           >
             −
@@ -152,8 +199,8 @@ export default function AddToCartButton({ product }: Props) {
           <button
             type="button"
             className={styles.qtyBtn}
-            onClick={() => updateQty(product.id, qty + 1)}
-            disabled={product.stockQuantity !== undefined && qty >= product.stockQuantity}
+            onClick={() => updateQty(product.id, qty + 1, selectedVariant?.id)}
+            disabled={currentStockQty !== undefined && qty >= currentStockQty}
             aria-label="Increase quantity"
           >
             +

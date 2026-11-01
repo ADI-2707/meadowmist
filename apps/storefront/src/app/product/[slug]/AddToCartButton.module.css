@@ -80,6 +80,30 @@
   border-radius: var(--radius-md);
 }
 
+.variantPriceBar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px dashed var(--color-gold-soft);
+}
+
+.variantPrice {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-forest);
+}
+
+.variantSku {
+  font-size: var(--text-caption);
+  color: var(--color-ink);
+  opacity: 0.7;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
 .optionGroup {
   display: flex;
   flex-direction: column;
