@@ -157,7 +157,7 @@ export function OrderReturnModal({
             <div className={styles.policyNotice}>
               <Flame size={16} className={styles.candleIcon} />
               <div>
-                <strong>Candle Hygiene & Safety Policy:</strong> Used or burned candles cannot be returned for buyer's remorse (once the wick is burned, the piece cannot be resold). Unused, unlit candles in original packaging can be returned within 7 to 14 days of delivery.
+                <strong>Candle Hygiene & Safety Policy:</strong> Used or burned candles cannot be returned for buyer&apos;s remorse (once the wick is burned, the piece cannot be resold). Unused, unlit candles in original packaging can be returned within 7 to 14 days of delivery.
               </div>
             </div>
 
