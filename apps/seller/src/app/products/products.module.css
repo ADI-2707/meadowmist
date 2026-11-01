@@ -164,7 +164,8 @@
   gap: 12px;
 }
 
-.thumb {
+.thumb,
+.productThumb {
   width: 44px;
   height: 44px;
   position: relative;

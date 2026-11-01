@@ -231,7 +231,7 @@ export function CatalogTab() {
                     <tr key={p.id}>
                       <td>
                         <div className={styles.productCell}>
-                          <div className={styles.productThumb}>
+                          <div className={styles.productThumb} style={{ position: 'relative', width: '44px', height: '44px', minWidth: '44px', minHeight: '44px', borderRadius: 'var(--radius-sm)', overflow: 'hidden', backgroundColor: 'var(--color-canvas)', flexShrink: 0, border: '1px solid var(--color-gold-soft)' }}>
                             <Image
                               src={thumb}
                               alt={p.name}
