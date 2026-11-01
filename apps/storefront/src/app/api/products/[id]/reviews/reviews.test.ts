@@ -10,7 +10,11 @@ vi.mock('@/lib/prisma', () => ({
     },
     review: {
       findMany: vi.fn(),
+      upsert: vi.fn(),
       create: vi.fn(),
+    },
+    reviewHelpfulVote: {
+      findMany: vi.fn(),
     },
     orderItem: {
       findFirst: vi.fn(),
@@ -39,7 +43,7 @@ describe('Product Reviews API Route', () => {
   });
 
   it('GET calculates average rating and distribution counts correctly', async () => {
-    vi.mocked(prisma.product.findFirst).mockResolvedValue({ id: 'prod-1' } as any);
+    vi.mocked(prisma.product.findFirst).mockResolvedValue({ id: 'prod-1', category: 'candle' } as any);
     vi.mocked(prisma.review.findMany).mockResolvedValue([
       { id: 'rev-1', rating: 5, comment: 'Amazing', createdAt: new Date() } as any,
       { id: 'rev-2', rating: 4, comment: 'Great', createdAt: new Date() } as any,
@@ -94,14 +98,21 @@ describe('Product Reviews API Route', () => {
     vi.mocked(getSessionUser).mockResolvedValue({ userId: 'user-1', email: 'u@test.com', role: 'CUSTOMER' });
     vi.mocked(prisma.product.findFirst).mockResolvedValue({ id: 'prod-1' } as any);
     vi.mocked(prisma.orderItem.findFirst).mockResolvedValue({ id: 'order-item-1' } as any);
-    vi.mocked(prisma.review.create).mockResolvedValue({
+    vi.mocked(prisma.review.upsert).mockResolvedValue({
       id: 'rev-new',
       productId: 'prod-1',
       userId: 'user-1',
       rating: 5,
       comment: 'Authentic handmade delight',
+      images: null,
+      helpfulCount: 0,
+      sellerReply: null,
+      sellerRepliedAt: null,
+      aspectRatings: null,
       isVerifiedPurchase: true,
       isApproved: true,
+      createdAt: new Date(),
+      user: { name: 'Aditi' },
     } as any);
 
     const req = new Request('http://localhost:3000/api/products/prod-1/reviews', {
@@ -114,9 +125,9 @@ describe('Product Reviews API Route', () => {
     expect(res.status).toBe(201);
     const body = await res.json();
     expect(body.review.isVerifiedPurchase).toBe(true);
-    expect(prisma.review.create).toHaveBeenCalledWith(
+    expect(prisma.review.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
-        data: expect.objectContaining({
+        create: expect.objectContaining({
           isVerifiedPurchase: true,
           rating: 5,
         }),
