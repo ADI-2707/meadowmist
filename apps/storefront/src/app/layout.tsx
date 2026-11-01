@@ -20,7 +20,6 @@ const jost = Jost({
   subsets: ['latin'],
   variable: '--font-jost',
   display: 'swap',
-  weight: ['300', '400', '500', '600', '700'],
 });
 
 export const metadata: Metadata = {

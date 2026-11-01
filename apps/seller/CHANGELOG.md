@@ -1,5 +1,11 @@
 # @meadowmist/seller
 
+## 0.3.0
+
+### Minor Changes
+
+- ce92ec8: Seller admin fulfillment queue, damage photo gallery, cancellation reason alert, and TOTP 2FA
+
 ## 0.2.0
 
 ### Minor Changes
