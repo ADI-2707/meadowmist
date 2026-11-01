@@ -3,7 +3,7 @@ import { POST } from './route';
 import { prisma } from '@/lib/prisma';
 import { comparePassword } from '@/lib/password';
 import { signToken } from '@/lib/auth';
-import { setSessionCookie } from '@/lib/session';
+import { setSessionCookie, setTrustedDeviceCookie } from '@/lib/session';
 import {
   checkLoginAttempt,
   recordFailedAttempt,
@@ -187,6 +187,7 @@ describe('Storefront Login API Route', () => {
     expect(res.status).toBe(200);
     expect(resetFailedAttempts).toHaveBeenCalledWith('127.0.0.1', 'valid@example.com');
     expect(setSessionCookie).toHaveBeenCalledWith('jwt_token_123', false);
+    expect(setTrustedDeviceCookie).toHaveBeenCalled();
 
     const body = await res.json();
     expect(body.user.email).toBe('valid@example.com');
