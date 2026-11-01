@@ -7,6 +7,7 @@ import {
   checkLoginAttempt,
   recordFailedAttempt,
   resetFailedAttempts,
+  verifyTurnstileToken,
 } from '@meadowmist/shared';
 
 function getClientIp(request: Request): string {
@@ -20,7 +21,7 @@ function getClientIp(request: Request): string {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, password } = body;
+    const { email, password, turnstileToken } = body;
 
     if (!email || !password) {
       return NextResponse.json(
@@ -47,6 +48,19 @@ export async function POST(request: Request) {
           },
         }
       );
+    }
+
+    if (check.requireStepUp || turnstileToken) {
+      const turnstile = await verifyTurnstileToken(turnstileToken, ip);
+      if (!turnstile.success) {
+        return NextResponse.json(
+          {
+            error: 'Security verification failed. Please complete the captcha check.',
+            requireTurnstile: true,
+          },
+          { status: 400 }
+        );
+      }
     }
 
     const user = await prisma.user.findUnique({

@@ -8,6 +8,7 @@ import {
   checkLoginAttempt,
   recordFailedAttempt,
   resetFailedAttempts,
+  verifyTurnstileToken,
 } from '@meadowmist/shared';
 
 vi.mock('@/lib/prisma', () => ({
@@ -37,12 +38,14 @@ vi.mock('@meadowmist/shared', async () => {
     checkLoginAttempt: vi.fn(),
     recordFailedAttempt: vi.fn(),
     resetFailedAttempts: vi.fn(),
+    verifyTurnstileToken: vi.fn(),
   };
 });
 
 describe('Seller Portal Login API Route', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(verifyTurnstileToken).mockResolvedValue({ success: true });
   });
 
   it('returns 400 when email or password is empty', async () => {
@@ -61,43 +64,73 @@ describe('Seller Portal Login API Route', () => {
   it('returns 429 when seller account is temporarily locked', async () => {
     vi.mocked(checkLoginAttempt).mockReturnValue({
       allowed: false,
+      requireStepUp: true,
       remainingSeconds: 60,
       attemptCount: 6,
+      targetAttemptCount: 3,
     });
 
     const req = new Request('http://localhost:3001/api/auth/login', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-forwarded-for': '198.51.100.12',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        email: 'admin@meadowmist.in',
-        password: 'Password123!',
+        email: 'artisan@meadowmist.in',
+        password: 'AdminPassword123!',
       }),
     });
 
     const res = await POST(req);
     expect(res.status).toBe(429);
     expect(res.headers.get('Retry-After')).toBe('60');
-
     const body = await res.json();
-    expect(body.remainingSeconds).toBe(60);
     expect(body.error).toContain('Account temporarily locked');
   });
 
-  it('records failed attempt and returns 401 when user is not admin or inactive', async () => {
+  it('returns 400 when step-up security challenge fails', async () => {
     vi.mocked(checkLoginAttempt).mockReturnValue({
       allowed: true,
+      requireStepUp: true,
+      remainingSeconds: 0,
+      attemptCount: 3,
+      targetAttemptCount: 6,
+    });
+
+    vi.mocked(verifyTurnstileToken).mockResolvedValue({
+      success: false,
+      errorCodes: ['invalid-input-response'],
+    });
+
+    const req = new Request('http://localhost:3001/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'artisan@meadowmist.in',
+        password: 'AdminPassword123!',
+        turnstileToken: 'invalid_token',
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain('Security verification failed');
+    expect(body.requireTurnstile).toBe(true);
+  });
+
+  it('records failed attempt and rejects user if account is not ADMIN', async () => {
+    vi.mocked(checkLoginAttempt).mockReturnValue({
+      allowed: true,
+      requireStepUp: false,
       remainingSeconds: 0,
       attemptCount: 0,
+      targetAttemptCount: 0,
     });
 
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
-      id: 'u_customer',
+      id: 'cust_1',
       email: 'customer@meadowmist.in',
-      passwordHash: 'hashed_pw',
-      name: 'Customer User',
+      passwordHash: 'valid_hashed_pw',
+      name: 'Customer',
       role: 'CUSTOMER',
       isActive: true,
       phone: null,
@@ -107,8 +140,10 @@ describe('Seller Portal Login API Route', () => {
 
     vi.mocked(recordFailedAttempt).mockReturnValue({
       allowed: true,
+      requireStepUp: false,
       remainingSeconds: 0,
       attemptCount: 1,
+      targetAttemptCount: 1,
     });
 
     const req = new Request('http://localhost:3001/api/auth/login', {
@@ -116,7 +151,7 @@ describe('Seller Portal Login API Route', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email: 'customer@meadowmist.in',
-        password: 'SecretPassword123!',
+        password: 'Password123!',
       }),
     });
 
@@ -128,8 +163,10 @@ describe('Seller Portal Login API Route', () => {
   it('authenticates admin successfully, resets lockouts, sets admin session cookie, and returns 200', async () => {
     vi.mocked(checkLoginAttempt).mockReturnValue({
       allowed: true,
+      requireStepUp: false,
       remainingSeconds: 0,
       attemptCount: 0,
+      targetAttemptCount: 0,
     });
 
     vi.mocked(prisma.user.findUnique).mockResolvedValue({

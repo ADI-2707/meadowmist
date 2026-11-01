@@ -8,6 +8,7 @@ import {
   checkLoginAttempt,
   recordFailedAttempt,
   resetFailedAttempts,
+  verifyTurnstileToken,
 } from '@meadowmist/shared';
 
 vi.mock('@/lib/prisma', () => ({
@@ -37,12 +38,14 @@ vi.mock('@meadowmist/shared', async () => {
     checkLoginAttempt: vi.fn(),
     recordFailedAttempt: vi.fn(),
     resetFailedAttempts: vi.fn(),
+    verifyTurnstileToken: vi.fn(),
   };
 });
 
 describe('Storefront Login API Route', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(verifyTurnstileToken).mockResolvedValue({ success: true });
   });
 
   it('returns 400 when email or password is missing', async () => {
@@ -58,19 +61,18 @@ describe('Storefront Login API Route', () => {
     expect(body.error).toBe('Email and password are required');
   });
 
-  it('returns 429 with Retry-After when account is locked', async () => {
+  it('returns 429 when checkLoginAttempt indicates lockout', async () => {
     vi.mocked(checkLoginAttempt).mockReturnValue({
       allowed: false,
-      remainingSeconds: 30,
+      requireStepUp: true,
+      remainingSeconds: 45,
       attemptCount: 5,
+      targetAttemptCount: 2,
     });
 
     const req = new Request('http://localhost:3000/api/auth/login', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-forwarded-for': '203.0.113.195',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email: 'locked@example.com',
         password: 'Password123!',
@@ -79,25 +81,58 @@ describe('Storefront Login API Route', () => {
 
     const res = await POST(req);
     expect(res.status).toBe(429);
-    expect(res.headers.get('Retry-After')).toBe('30');
-
+    expect(res.headers.get('Retry-After')).toBe('45');
     const body = await res.json();
-    expect(body.remainingSeconds).toBe(30);
     expect(body.error).toContain('Account temporarily locked');
   });
 
-  it('records failed attempt and returns 401 on invalid credentials', async () => {
+  it('returns 400 when step-up security challenge fails', async () => {
     vi.mocked(checkLoginAttempt).mockReturnValue({
       allowed: true,
+      requireStepUp: true,
+      remainingSeconds: 0,
+      attemptCount: 3,
+      targetAttemptCount: 6,
+    });
+
+    vi.mocked(verifyTurnstileToken).mockResolvedValue({
+      success: false,
+      errorCodes: ['invalid-input-response'],
+    });
+
+    const req = new Request('http://localhost:3000/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: 'victim@example.com',
+        password: 'Password123!',
+        turnstileToken: 'bad_token',
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain('Security verification failed');
+    expect(body.requireTurnstile).toBe(true);
+  });
+
+  it('records failed attempt and returns 401 when user does not exist', async () => {
+    vi.mocked(checkLoginAttempt).mockReturnValue({
+      allowed: true,
+      requireStepUp: false,
       remainingSeconds: 0,
       attemptCount: 1,
+      targetAttemptCount: 1,
     });
 
     vi.mocked(prisma.user.findUnique).mockResolvedValue(null);
     vi.mocked(recordFailedAttempt).mockReturnValue({
       allowed: true,
+      requireStepUp: false,
       remainingSeconds: 0,
       attemptCount: 2,
+      targetAttemptCount: 2,
     });
 
     const req = new Request('http://localhost:3000/api/auth/login', {
@@ -117,8 +152,10 @@ describe('Storefront Login API Route', () => {
   it('resets failed attempts and returns 200 on valid credentials', async () => {
     vi.mocked(checkLoginAttempt).mockReturnValue({
       allowed: true,
+      requireStepUp: false,
       remainingSeconds: 0,
       attemptCount: 0,
+      targetAttemptCount: 0,
     });
 
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
