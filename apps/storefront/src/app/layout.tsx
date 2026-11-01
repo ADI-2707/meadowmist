@@ -8,6 +8,7 @@ import IntroLoader from '@/components/IntroLoader/IntroLoader';
 import ScrollProgressBar from '@/components/ScrollProgressBar/ScrollProgressBar';
 import CartToast from '@/components/CartToast/CartToast';
 import MobileBottomNav from '@/components/MobileBottomNav/MobileBottomNav';
+import KeepAlive from '@/components/KeepAlive/KeepAlive';
 
 const fraunces = Fraunces({
   subsets: ['latin'],
@@ -68,6 +69,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </main>
         <Footer />
         <MobileBottomNav />
+        <KeepAlive />
       </body>
     </html>
   );

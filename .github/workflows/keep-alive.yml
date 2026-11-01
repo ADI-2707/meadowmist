@@ -1,0 +1,28 @@
+name: Database Keep-Alive
+
+on:
+  schedule:
+    # Runs every 5 minutes (standard GitHub cron interval)
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: keep-alive-schedule
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    name: Ping Health Endpoints
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Ping Storefront & Seller
+        run: |
+          echo "Pinging Storefront Health API..."
+          curl -sS -f --max-time 10 https://meadowmist.vercel.app/api/health || echo "Storefront ping failed or timed out"
+          echo ""
+          echo "Pinging Seller Health API..."
+          curl -sS -f --max-time 10 https://meadowmist-seller.vercel.app/api/health || echo "Seller ping failed or timed out"
+          echo ""
+          echo "Keep-alive ping finished."
