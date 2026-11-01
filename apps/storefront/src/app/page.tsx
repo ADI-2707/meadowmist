@@ -4,7 +4,9 @@ import FeaturedCategory from '@/components/FeaturedCategory/FeaturedCategory';
 import SectionReveal from '@/components/SectionReveal/SectionReveal';
 import HeroTrustStrip from '@/components/Hero/HeroTrustStrip';
 import BackToTop from '@/components/BackToTop/BackToTop';
+import { CollectorReviews } from '@/components/CollectorReviews/CollectorReviews';
 import { getFeaturedProducts } from '@/lib/getProducts';
+import { getStoreSettings, getTopReviews, getHeroSlides } from '@/lib/cms';
 import styles from './page.module.css';
 import type { Metadata } from 'next';
 
@@ -15,12 +17,17 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const featuredCandles = await getFeaturedProducts(3, 'candle');
-  const featuredCeramics = await getFeaturedProducts(3, 'ceramic');
+  const [featuredCandles, featuredCeramics, storeSettings, topReviews, heroSlides] = await Promise.all([
+    getFeaturedProducts(3, 'candle'),
+    getFeaturedProducts(3, 'ceramic'),
+    getStoreSettings(),
+    getTopReviews(),
+    getHeroSlides(),
+  ]);
 
   return (
     <>
-      <Hero />
+      <Hero slides={heroSlides} />
 
       <BrushDivider />
 
@@ -44,14 +51,11 @@ export default async function HomePage() {
               <div className={styles.storyContent}>
                 <p className={styles.storyEyebrow}>About Meadow Mist</p>
                 <h2 className={styles.storyTitle}>
-                  Every piece starts<br />
-                  <span className={styles.storyScript}>with a feeling.</span>
+                  {storeSettings?.aboutHeadline || 'Every piece starts with a feeling.'}
                 </h2>
                 <p className={styles.storyBody}>
-                  Meadow Mist began as a small experiment — what if everyday objects
-                  could feel as considered as something you would frame and hang on a wall?
-                  The candles are poured in batches of 8. The ceramics are thrown,
-                  trimmed, and glazed by one pair of hands. Nothing here is the same twice.
+                  {storeSettings?.aboutStory ||
+                    'Meadow Mist began as a small experiment — what if everyday objects could feel as considered as something you would frame and hang on a wall? The candles are poured in batches of 8. The ceramics are thrown, trimmed, and glazed by one pair of hands. Nothing here is the same twice.'}
                 </p>
                 <a href="/our-story" className={styles.storyLink}>Read the full story →</a>
               </div>
@@ -71,6 +75,10 @@ export default async function HomePage() {
           products={featuredCeramics}
         />
       </div>
+
+      <BrushDivider />
+
+      <CollectorReviews reviews={topReviews} />
 
       <BrushDivider />
 

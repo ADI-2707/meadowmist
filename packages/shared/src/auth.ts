@@ -1,7 +1,15 @@
 import { SignJWT, jwtVerify } from 'jose';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'meadow-mist-super-secure-production-jwt-secret-key-2026';
-const secretKey = new TextEncoder().encode(JWT_SECRET);
+function getSecretKey(): Uint8Array {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('FATAL: JWT_SECRET environment variable is required in production');
+    }
+    return new TextEncoder().encode('meadow-mist-dev-fallback-jwt-secret-key-2026');
+  }
+  return new TextEncoder().encode(secret);
+}
 
 export interface TokenPayload {
   userId: string;
@@ -12,6 +20,7 @@ export interface TokenPayload {
 }
 
 export async function signToken(payload: TokenPayload, expiresIn: string = '14d'): Promise<string> {
+  const secretKey = getSecretKey();
   return new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
@@ -21,6 +30,7 @@ export async function signToken(payload: TokenPayload, expiresIn: string = '14d'
 
 export async function verifyToken(token: string): Promise<TokenPayload | null> {
   try {
+    const secretKey = getSecretKey();
     const { payload } = await jwtVerify(token, secretKey);
     return payload as unknown as TokenPayload;
   } catch {

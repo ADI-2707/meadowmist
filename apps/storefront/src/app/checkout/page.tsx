@@ -20,11 +20,19 @@ interface Address {
   isDefault: boolean;
 }
 
+interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string | null;
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const items = useCartStore((s) => s.items);
   const clearCart = useCartStore((s) => s.clearCart);
 
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string>('');
   const [showNewAddress, setShowNewAddress] = useState(false);
@@ -47,41 +55,63 @@ export default function CheckoutPage() {
 
   const [loading, setLoading] = useState(false);
   const [placingOrder, setPlacingOrder] = useState(false);
+  const [shippingRate, setShippingRate] = useState(99);
+  const [freeThreshold, setFreeThreshold] = useState(1499);
 
   const subtotal = items.reduce((sum, i) => sum + i.price * i.qty, 0);
-  const shippingCharges = subtotal >= 1499 || subtotal === 0 ? 0 : 99;
+  const shippingCharges = subtotal >= freeThreshold || subtotal === 0 ? 0 : shippingRate;
   const discountAmount = appliedPromo ? appliedPromo.discount : 0;
   const totalAmount = Math.max(0, subtotal + shippingCharges - discountAmount);
 
   useEffect(() => {
-    const fetchAddresses = async () => {
+    fetch('/api/settings')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.settings) {
+          setShippingRate(Number(data.settings.shippingFlatRate) || 99);
+          setFreeThreshold(Number(data.settings.freeShippingThreshold) || 1499);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const initCheckout = async () => {
       setLoading(true);
       try {
-        const res = await fetch('/api/account/addresses');
-        if (!res.ok) {
+        const userRes = await fetch('/api/auth/me');
+        if (!userRes.ok) {
           router.push('/login?redirect=/checkout');
           return;
         }
-        const data = await res.json();
-        if (data.addresses) {
-          setAddresses(data.addresses);
-          const def = data.addresses.find((a: Address) => a.isDefault);
-          if (def) {
-            setSelectedAddressId(def.id);
-          } else if (data.addresses.length > 0) {
-            setSelectedAddressId(data.addresses[0].id);
+        const userData = await userRes.json();
+        if (!userData.user) {
+          router.push('/login?redirect=/checkout');
+          return;
+        }
+        setCurrentUser(userData.user);
+
+        const addrRes = await fetch('/api/account/addresses');
+        if (addrRes.ok) {
+          const addrData = await addrRes.json();
+          if (addrData.addresses && addrData.addresses.length > 0) {
+            setAddresses(addrData.addresses);
+            const def = addrData.addresses.find((a: Address) => a.isDefault);
+            setSelectedAddressId(def ? def.id : addrData.addresses[0].id);
           } else {
             setShowNewAddress(true);
           }
+        } else {
+          setShowNewAddress(true);
         }
-      } catch (err) {
-        console.error(err);
+      } catch {
+        router.push('/login?redirect=/checkout');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAddresses();
+    initCheckout();
   }, [router]);
 
   const handleApplyPromo = async () => {
@@ -168,6 +198,7 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           items: items.map((i) => ({
             productId: i.productId,
+            variantId: i.variantId || undefined,
             name: i.name,
             price: i.price,
             qty: i.qty,
@@ -233,6 +264,19 @@ export default function CheckoutPage() {
 
         <div className={styles.layout}>
           <div>
+            {currentUser && (
+              <div className={styles.customerBanner}>
+                <div className={styles.customerBannerInfo}>
+                  <span className={styles.customerBadge}>Authenticated Customer</span>
+                  <p className={styles.customerName}>{currentUser.name}</p>
+                  <p className={styles.customerEmail}>{currentUser.email}</p>
+                </div>
+                <Link href="/login?redirect=/checkout" className={styles.switchAccountLink}>
+                  Switch Account
+                </Link>
+              </div>
+            )}
+
             <div className={styles.sectionCard}>
               <h2 className={styles.sectionTitle}>1. Delivery Address</h2>
 
@@ -263,13 +307,15 @@ export default function CheckoutPage() {
                 </div>
               )}
 
-              <button
-                type="button"
-                onClick={() => setShowNewAddress(!showNewAddress)}
-                className={styles.addAddressBtn}
-              >
-                {showNewAddress ? 'Select from Saved Addresses' : '+ Deliver to a New Address'}
-              </button>
+              {addresses.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowNewAddress(!showNewAddress)}
+                  className={styles.addAddressBtn}
+                >
+                  {showNewAddress ? 'Select from Saved Addresses' : '+ Deliver to a New Address'}
+                </button>
+              )}
 
               {showNewAddress && (
                 <div className={styles.formGrid}>

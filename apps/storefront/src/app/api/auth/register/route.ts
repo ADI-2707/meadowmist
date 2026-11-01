@@ -3,11 +3,12 @@ import { prisma } from '@/lib/prisma';
 import { hashPassword } from '@/lib/password';
 import { signToken } from '@/lib/auth';
 import { setSessionCookie } from '@/lib/session';
+import { verifyTurnstileToken } from '@meadowmist/shared';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, email, password, phone } = body;
+    const { name, email, password, phone, turnstileToken } = body;
 
     if (!name || !email || !password) {
       return NextResponse.json(
@@ -21,6 +22,16 @@ export async function POST(request: Request) {
         { error: 'Password must be at least 6 characters' },
         { status: 400 }
       );
+    }
+
+    if (turnstileToken) {
+      const turnstile = await verifyTurnstileToken(turnstileToken);
+      if (!turnstile.success) {
+        return NextResponse.json(
+          { error: 'Security verification failed. Please complete the captcha check.' },
+          { status: 400 }
+        );
+      }
     }
 
     const normalizedEmail = String(email).trim().toLowerCase();
@@ -70,7 +81,7 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Registration error:', error);
     return NextResponse.json(
-      { error: 'Internal server error during registration' },
+      { error: 'Failed to create account' },
       { status: 500 }
     );
   }

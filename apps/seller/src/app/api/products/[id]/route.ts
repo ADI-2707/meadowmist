@@ -11,6 +11,9 @@ export async function GET(request: Request, context: RouteContext) {
     const { id } = await context.params;
     const product = await prisma.product.findUnique({
       where: { id },
+      include: {
+        variants: true,
+      },
     });
 
     if (!product) {
@@ -53,11 +56,65 @@ export async function PUT(request: Request, context: RouteContext) {
       lowStockThreshold,
       isFeatured,
       isActive,
+      variants,
+      deletedVariantIds,
     } = body;
 
     const existing = await prisma.product.findUnique({ where: { id } });
     if (!existing) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
+    }
+
+    if (Array.isArray(deletedVariantIds) && deletedVariantIds.length > 0) {
+      await prisma.productVariant.deleteMany({
+        where: {
+          id: { in: deletedVariantIds },
+          productId: id,
+        },
+      });
+    }
+
+    if (Array.isArray(variants)) {
+      for (const v of variants) {
+        const optVal = typeof v.optionValues === 'string' ? v.optionValues : JSON.stringify(v.optionValues || {});
+        if (v.id) {
+          await prisma.productVariant.upsert({
+            where: { id: v.id },
+            update: {
+              sku: String(v.sku).trim(),
+              name: String(v.name).trim(),
+              price: v.price ? Number(v.price) : null,
+              salePrice: v.salePrice ? Number(v.salePrice) : null,
+              stockQuantity: Number(v.stockQuantity) || 0,
+              inStock: (Number(v.stockQuantity) || 0) > 0,
+              optionValues: optVal,
+            },
+            create: {
+              productId: id,
+              sku: String(v.sku).trim(),
+              name: String(v.name).trim(),
+              price: v.price ? Number(v.price) : null,
+              salePrice: v.salePrice ? Number(v.salePrice) : null,
+              stockQuantity: Number(v.stockQuantity) || 0,
+              inStock: (Number(v.stockQuantity) || 0) > 0,
+              optionValues: optVal,
+            },
+          });
+        } else if (v.sku && v.name) {
+          await prisma.productVariant.create({
+            data: {
+              productId: id,
+              sku: String(v.sku).trim(),
+              name: String(v.name).trim(),
+              price: v.price ? Number(v.price) : null,
+              salePrice: v.salePrice ? Number(v.salePrice) : null,
+              stockQuantity: Number(v.stockQuantity) || 0,
+              inStock: (Number(v.stockQuantity) || 0) > 0,
+              optionValues: optVal,
+            },
+          });
+        }
+      }
     }
 
     const updated = await prisma.product.update({
@@ -83,6 +140,9 @@ export async function PUT(request: Request, context: RouteContext) {
         inStock: stockQuantity !== undefined ? Number(stockQuantity) > 0 : existing.inStock,
         isFeatured: isFeatured !== undefined ? Boolean(isFeatured) : existing.isFeatured,
         isActive: isActive !== undefined ? Boolean(isActive) : existing.isActive,
+      },
+      include: {
+        variants: true,
       },
     });
 

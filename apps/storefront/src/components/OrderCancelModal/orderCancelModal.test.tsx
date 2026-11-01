@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { OrderCancelModal } from './OrderCancelModal';
 
 describe('OrderCancelModal Component', () => {
@@ -75,7 +75,9 @@ describe('OrderCancelModal Component', () => {
     });
 
     const submitBtn = screen.getByRole('button', { name: /Confirm Cancellation/i });
-    await fireEvent.click(submitBtn);
+    await act(async () => {
+      fireEvent.click(submitBtn);
+    });
 
     expect(onConfirm).toHaveBeenCalledWith(
       'Delivery timeframe is too long: Need it for an event tomorrow'

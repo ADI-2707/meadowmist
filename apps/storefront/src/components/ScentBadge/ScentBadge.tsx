@@ -1,3 +1,4 @@
+import React from 'react';
 import styles from './ScentBadge.module.css';
 
 const FAMILY_LABELS: Record<string, string> = {

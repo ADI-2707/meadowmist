@@ -41,6 +41,7 @@ describe('Storefront getProducts Database-Driven Service', () => {
     isFeatured: true,
     isActive: true,
     reviews: [{ rating: 5 }],
+    variants: [],
   };
 
   const reviewInclude = {
@@ -48,6 +49,7 @@ describe('Storefront getProducts Database-Driven Service', () => {
       where: { isApproved: true },
       select: { rating: true },
     },
+    variants: true,
   };
 
   beforeEach(() => {
@@ -143,5 +145,17 @@ describe('Storefront getProducts Database-Driven Service', () => {
       orderBy: [{ isFeatured: 'desc' }, { badge: 'desc' }],
     });
     expect(featured).toHaveLength(1);
+  });
+
+  it('formats product with 0 reviews as 0 average rating and 0 review count', async () => {
+    const unreviewedProduct = {
+      ...sampleDbProduct,
+      reviews: [],
+    };
+    vi.mocked(prisma.product.findMany).mockResolvedValue([unreviewedProduct] as any);
+
+    const result = await getProducts();
+    expect(result[0].reviewCount).toBe(0);
+    expect(result[0].averageRating).toBe(0);
   });
 });

@@ -7,19 +7,17 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   Package,
-  Boxes,
   ShoppingBag,
   Users,
-  MessageSquare,
-  FileText,
-  Tag,
+  Megaphone,
   Settings,
-  Star,
   ExternalLink,
   ChevronLeft,
   ChevronRight,
   X,
 } from 'lucide-react';
+import sellerPkg from '../../../package.json';
+import storefrontPkg from '../../../../storefront/package.json';
 import styles from './Sidebar.module.css';
 
 export interface NavItem {
@@ -31,19 +29,34 @@ export interface NavItem {
 
 export const NAV_ITEMS: NavItem[] = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard, exact: true },
-  { href: '/products', label: 'Products', icon: Package },
-  { href: '/inventory', label: 'Inventory Stock', icon: Boxes },
-  { href: '/orders', label: 'Orders & Shipments', icon: ShoppingBag },
-  { href: '/customers', label: 'Customers', icon: Users },
-  { href: '/reviews', label: 'Customer Reviews', icon: Star },
-  { href: '/enquiries', label: 'Contact Enquiries', icon: MessageSquare },
-  { href: '/content', label: 'Store Content CMS', icon: FileText },
-  { href: '/promotions', label: 'Promo Discounts', icon: Tag },
-  { href: '/settings', label: 'Store Settings', icon: Settings },
+  { href: '/products', label: 'Catalog & Stock', icon: Package },
+  { href: '/orders', label: 'Orders & Logistics', icon: ShoppingBag },
+  { href: '/customers', label: 'Customers & Support', icon: Users },
+  { href: '/marketing', label: 'Marketing & Store', icon: Megaphone },
 ];
 
 export function isSidebarItemActive(item: NavItem, pathname: string): boolean {
-  return item.exact ? pathname === item.href : pathname.startsWith(item.href);
+  if (item.exact) {
+    return pathname === item.href;
+  }
+  if (item.href === '/products') {
+    return pathname.startsWith('/products') || pathname.startsWith('/inventory');
+  }
+  if (item.href === '/customers') {
+    return (
+      pathname.startsWith('/customers') ||
+      pathname.startsWith('/reviews') ||
+      pathname.startsWith('/enquiries')
+    );
+  }
+  if (item.href === '/marketing') {
+    return (
+      pathname.startsWith('/marketing') ||
+      pathname.startsWith('/content') ||
+      pathname.startsWith('/promotions')
+    );
+  }
+  return pathname.startsWith(item.href);
 }
 
 interface SidebarProps {
@@ -61,6 +74,7 @@ export function Sidebar({
 }: SidebarProps) {
   const pathname = usePathname();
   const storefrontUrl = process.env.NEXT_PUBLIC_STOREFRONT_URL || 'http://localhost:3000';
+  const isSettingsActive = pathname.startsWith('/settings');
 
   return (
     <>
@@ -142,6 +156,20 @@ export function Sidebar({
         </nav>
 
         <div className={styles.sidebarFooter}>
+          <Link
+            href="/settings"
+            onClick={onCloseMobile}
+            title={collapsed && !mobileOpen ? 'Store Settings' : undefined}
+            className={`${styles.navLink} ${isSettingsActive ? styles.navLinkActive : ''}`}
+          >
+            <span className={styles.navIcon}>
+              <Settings size={18} />
+            </span>
+            {(!collapsed || mobileOpen) && (
+              <span className={styles.navLabel}>Store Settings</span>
+            )}
+          </Link>
+
           <a
             href={storefrontUrl}
             target="_blank"
@@ -152,6 +180,22 @@ export function Sidebar({
             <ExternalLink size={14} />
             {(!collapsed || mobileOpen) && <span>View Storefront</span>}
           </a>
+
+          {(!collapsed || mobileOpen) ? (
+            <div className={styles.versionInfo} data-testid="sidebar-version-info">
+              <span>Portal v{sellerPkg.version}</span>
+              <span className={styles.versionDot}>·</span>
+              <span>Store v{storefrontPkg.version}</span>
+            </div>
+          ) : (
+            <div
+              className={styles.versionInfoCollapsed}
+              data-testid="sidebar-version-collapsed"
+              title={`Portal v${sellerPkg.version} · Store v${storefrontPkg.version}`}
+            >
+              v{sellerPkg.version}
+            </div>
+          )}
         </div>
       </aside>
     </>

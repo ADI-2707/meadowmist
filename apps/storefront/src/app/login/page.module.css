@@ -57,11 +57,29 @@
   gap: var(--space-1);
 }
 
+.labelRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .label {
   font-size: var(--text-caption);
   font-weight: 500;
   color: var(--color-forest);
   letter-spacing: 0.04em;
+}
+
+.forgotLink {
+  font-size: var(--text-caption);
+  color: var(--color-forest);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color var(--duration-fast);
+}
+
+.forgotLink:hover {
+  color: var(--color-gold);
 }
 
 .input {

@@ -35,6 +35,108 @@
   }
 }
 
+.customerBanner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-gold-soft);
+  border-radius: var(--radius-sm);
+  padding: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.customerBannerInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.customerBadge {
+  font-size: var(--text-caption);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-gold);
+  font-weight: 600;
+}
+
+.customerName {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  color: var(--color-forest);
+  font-weight: 600;
+  margin: 0;
+}
+
+.customerEmail {
+  font-size: var(--text-caption);
+  color: var(--color-ink);
+  margin: 0;
+}
+
+.switchAccountLink {
+  display: inline-block;
+  padding: 6px 14px;
+  background-color: transparent;
+  color: var(--color-forest);
+  border: 1px solid var(--color-forest);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-caption);
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all var(--duration-fast);
+}
+
+.switchAccountLink:hover {
+  background-color: var(--color-forest);
+  color: #ffffff;
+}
+
+.guestBanner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-gold-soft);
+  border-radius: var(--radius-sm);
+  padding: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+.guestBanner strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  color: var(--color-forest);
+  margin-bottom: 2px;
+}
+
+.guestBanner p {
+  font-size: var(--text-caption);
+  color: var(--color-ink);
+  margin: 0;
+}
+
+.guestSignInLink {
+  display: inline-block;
+  padding: 8px 16px;
+  background-color: var(--color-forest);
+  color: #ffffff;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color var(--duration-fast);
+}
+
+.guestSignInLink:hover {
+  background-color: var(--color-gold);
+}
+
 .sectionCard {
   background-color: var(--color-surface);
   border: 1px solid var(--color-gold-soft);
@@ -100,53 +202,63 @@
   padding: 10px 16px;
   border-radius: var(--radius-sm);
   font-size: var(--text-caption);
-  font-weight: 600;
   cursor: pointer;
   width: 100%;
-  transition: all var(--duration-fast);
+  margin-bottom: var(--space-4);
+  transition: background-color var(--duration-fast);
 }
 
 .addAddressBtn:hover {
-  background-color: var(--color-canvas-alt);
+  background-color: var(--color-canvas);
 }
 
 .formGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--space-3);
+  gap: var(--space-4);
   margin-top: var(--space-4);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--color-canvas-alt);
 }
 
 .formFull {
   grid-column: span 2;
 }
 
+@media (max-width: 600px) {
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+  .formFull {
+    grid-column: span 1;
+  }
+}
+
 .inputField {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-1);
 }
 
 .inputField label {
   font-size: var(--text-caption);
-  font-weight: 500;
   color: var(--color-forest);
+  font-weight: 500;
 }
 
 .inputField input {
-  padding: 10px 12px;
+  padding: 12px 14px;
   border: 1px solid var(--color-gold-soft);
   border-radius: var(--radius-sm);
   background-color: var(--color-canvas);
   font-size: var(--text-body);
-  font-family: var(--font-body);
+  color: var(--color-ink);
+  font-family: inherit;
+  transition: border-color var(--duration-fast);
 }
 
 .inputField input:focus {
   outline: none;
   border-color: var(--color-forest);
+  background-color: #ffffff;
 }
 
 .paymentOptions {
@@ -157,13 +269,13 @@
 
 .paymentOption {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-3);
   padding: var(--space-4);
   border: 1px solid var(--color-gold-soft);
   border-radius: var(--radius-sm);
-  cursor: pointer;
   background-color: var(--color-canvas);
+  cursor: pointer;
   transition: all var(--duration-fast);
 }
 
@@ -182,21 +294,20 @@
 .paymentDesc {
   font-size: var(--text-caption);
   color: var(--color-ink);
-  opacity: 0.8;
+  margin-top: 2px;
 }
 
 .summaryCol {
   position: sticky;
-  top: 96px;
+  top: 100px;
 }
 
 .orderItemRow {
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  margin-bottom: var(--space-3);
-  padding-bottom: var(--space-3);
-  border-bottom: 1px solid var(--color-canvas-alt);
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-gold-soft);
 }
 
 .itemThumb {
@@ -210,65 +321,78 @@
 }
 
 .itemInfo {
-  flex: 1;
+  flex-grow: 1;
 }
 
 .itemName {
   font-size: var(--text-body);
-  font-weight: 500;
   color: var(--color-forest);
+  font-weight: 500;
+  line-height: 1.3;
 }
 
 .itemMeta {
-  font-size: 0.75rem;
-  opacity: 0.75;
+  font-size: var(--text-caption);
+  color: var(--color-ink);
+  opacity: 0.8;
+  margin-top: 2px;
 }
 
 .itemPrice {
   font-weight: 600;
-  font-size: var(--text-body);
   color: var(--color-forest);
+  font-size: var(--text-body);
 }
 
 .promoRow {
   display: flex;
   gap: var(--space-2);
-  margin: var(--space-4) 0;
+  margin: var(--space-4) 0 var(--space-2);
 }
 
 .promoInput {
-  flex: 1;
-  padding: 10px 14px;
+  flex-grow: 1;
+  padding: 10px 12px;
   border: 1px solid var(--color-gold-soft);
   border-radius: var(--radius-sm);
+  background-color: var(--color-canvas);
+  font-size: var(--text-caption);
   text-transform: uppercase;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  font-family: var(--font-body);
+}
+
+.promoInput:focus {
+  outline: none;
+  border-color: var(--color-forest);
 }
 
 .promoBtn {
   background-color: var(--color-forest);
   color: #ffffff;
   border: none;
-  padding: 10px 16px;
+  padding: 0 16px;
   border-radius: var(--radius-sm);
+  font-size: var(--text-caption);
   font-weight: 600;
   cursor: pointer;
-  font-size: var(--text-caption);
+  transition: background-color var(--duration-fast);
+}
+
+.promoBtn:hover {
+  background-color: var(--color-gold);
 }
 
 .promoSuccess {
-  color: #2f855a;
   font-size: var(--text-caption);
-  font-weight: 600;
+  color: #2f855a;
   margin-bottom: var(--space-2);
+  font-weight: 500;
 }
 
 .promoError {
-  color: #c53030;
   font-size: var(--text-caption);
+  color: #c53030;
   margin-bottom: var(--space-2);
+  font-weight: 500;
 }
 
 .calcRow {
@@ -282,9 +406,10 @@
 .calcTotal {
   display: flex;
   justify-content: space-between;
-  padding: var(--space-4) 0 var(--space-2);
-  margin-top: var(--space-2);
-  border-top: 1px solid var(--color-gold-soft);
+  padding: var(--space-4) 0;
+  border-top: 1px dashed var(--color-gold);
+  border-bottom: 1px dashed var(--color-gold);
+  margin-top: var(--space-3);
   font-size: 1.25rem;
   font-weight: 700;
   color: var(--color-forest);
@@ -296,7 +421,7 @@
   background-color: var(--color-forest);
   color: #ffffff;
   border: none;
-  padding: 16px 24px;
+  padding: 16px;
   border-radius: var(--radius-sm);
   font-size: 1rem;
   font-weight: 700;

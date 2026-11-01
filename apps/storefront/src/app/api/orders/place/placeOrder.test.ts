@@ -25,7 +25,7 @@ describe('Place Order API Route', () => {
     postalCode: '560001',
   };
 
-  it('returns 401 when user is not authenticated', async () => {
+  it('returns 401 when user session is not authenticated', async () => {
     vi.mocked(getSessionUser).mockResolvedValue(null);
 
     const req = new Request('http://localhost:3000/api/orders/place', {
@@ -37,7 +37,76 @@ describe('Place Order API Route', () => {
     const res = await POST(req);
     expect(res.status).toBe(401);
     const body = await res.json();
-    expect(body.error).toBe('Please sign in to place your order');
+    expect(body.error).toBe('Please sign in to place an order');
+  });
+
+  it('successfully places an order as an authenticated customer', async () => {
+    vi.mocked(getSessionUser).mockResolvedValue({
+      userId: 'user_cust_1',
+      email: 'meera@example.com',
+      name: 'Meera',
+      role: 'CUSTOMER',
+    });
+
+    let capturedCreateData: any = null;
+    const deleteManyMock = vi.fn();
+
+    vi.mocked(prisma.$transaction).mockImplementation(async (callback: any) => {
+      const mockTx = {
+        product: {
+          findUnique: vi.fn()
+            .mockResolvedValueOnce({
+              id: 'p1',
+              name: 'Amber Candle',
+              price: 899,
+              isActive: true,
+              stockQuantity: 10,
+              images: '["/amber.jpg"]',
+            })
+            .mockResolvedValueOnce({
+              stockQuantity: 9,
+            }),
+          updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+          update: vi.fn(),
+        },
+        inventoryLog: {
+          create: vi.fn().mockResolvedValue({ id: 'log_cust' }),
+        },
+        storeSettings: {
+          findUnique: vi.fn().mockResolvedValue({
+            shippingFlatRate: 99,
+            freeShippingThreshold: 1499,
+          }),
+        },
+        order: {
+          create: vi.fn().mockImplementation(async (args) => {
+            capturedCreateData = args.data;
+            return { id: 'order_cust_1', ...args.data };
+          }),
+        },
+        cartItem: {
+          deleteMany: deleteManyMock,
+        },
+      };
+      return callback(mockTx as any);
+    });
+
+    const req = new Request('http://localhost:3000/api/orders/place', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        items: [{ productId: 'p1', qty: 1 }],
+        shippingAddress: validAddress,
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(201);
+    expect(capturedCreateData.isGuest).toBe(false);
+    expect(capturedCreateData.userId).toBe('user_cust_1');
+    expect(capturedCreateData.guestEmail).toBeNull();
+    expect(capturedCreateData.guestPhone).toBeNull();
+    expect(deleteManyMock).toHaveBeenCalledWith({ where: { userId: 'user_cust_1' } });
   });
 
   it('returns 400 when items array is missing or empty', async () => {
@@ -123,6 +192,144 @@ describe('Place Order API Route', () => {
     expect(body.error).toContain('Insufficient stock for "Amber Candle"');
   });
 
+  it('returns 400 when variant has insufficient stock', async () => {
+    vi.mocked(getSessionUser).mockResolvedValue({
+      userId: 'user_1',
+      email: 'ananya@example.com',
+      name: 'Ananya',
+      role: 'CUSTOMER',
+    });
+
+    vi.mocked(prisma.$transaction).mockImplementation(async (callback: any) => {
+      const mockTx = {
+        product: {
+          findUnique: vi.fn().mockResolvedValue({
+            id: 'p1',
+            name: 'Artisan Mug',
+            price: 799,
+            isActive: true,
+            stockQuantity: 10,
+            images: '["/mug.jpg"]',
+          }),
+        },
+        productVariant: {
+          findUnique: vi.fn().mockResolvedValue({
+            id: 'v1',
+            productId: 'p1',
+            name: 'Glazed Moss',
+            sku: 'MUG-MOSS',
+            stockQuantity: 1,
+            inStock: true,
+          }),
+          updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+        },
+      };
+      return callback(mockTx as any);
+    });
+
+    const req = new Request('http://localhost:3000/api/orders/place', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        items: [{ productId: 'p1', variantId: 'v1', qty: 2 }],
+        shippingAddress: validAddress,
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain('Insufficient stock for variant "Glazed Moss"');
+  });
+
+  it('successfully validates, decrements variant stock, and attaches variantId to order item', async () => {
+    vi.mocked(getSessionUser).mockResolvedValue({
+      userId: 'user_1',
+      email: 'ananya@example.com',
+      name: 'Ananya',
+      role: 'CUSTOMER',
+    });
+
+    let capturedCreateData: any = null;
+    let capturedLogData: any = null;
+
+    vi.mocked(prisma.$transaction).mockImplementation(async (callback: any) => {
+      const mockTx = {
+        product: {
+          findUnique: vi.fn()
+            .mockResolvedValueOnce({
+              id: 'p1',
+              name: 'Artisan Mug',
+              price: 799,
+              isActive: true,
+              stockQuantity: 10,
+              images: '["/mug.jpg"]',
+            })
+            .mockResolvedValueOnce({
+              stockQuantity: 9,
+            }),
+          updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+          update: vi.fn(),
+        },
+        productVariant: {
+          findUnique: vi.fn()
+            .mockResolvedValueOnce({
+              id: 'v1',
+              productId: 'p1',
+              name: 'Glazed Moss',
+              sku: 'MUG-MOSS',
+              price: 849,
+              stockQuantity: 5,
+              inStock: true,
+            })
+            .mockResolvedValueOnce({
+              stockQuantity: 4,
+            }),
+          updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+          update: vi.fn(),
+        },
+        inventoryLog: {
+          create: vi.fn().mockImplementation(async (args) => {
+            capturedLogData = args.data;
+            return { id: 'log_variant' };
+          }),
+        },
+        storeSettings: {
+          findUnique: vi.fn().mockResolvedValue({
+            shippingFlatRate: 99,
+            freeShippingThreshold: 1499,
+          }),
+        },
+        order: {
+          create: vi.fn().mockImplementation(async (args) => {
+            capturedCreateData = args.data;
+            return { id: 'order_variant_1', ...args.data };
+          }),
+        },
+        cartItem: {
+          deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
+        },
+      };
+      return callback(mockTx as any);
+    });
+
+    const req = new Request('http://localhost:3000/api/orders/place', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        items: [{ productId: 'p1', variantId: 'v1', qty: 1 }],
+        shippingAddress: validAddress,
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(201);
+    expect(capturedCreateData.items.create[0].variantId).toBe('v1');
+    expect(capturedCreateData.items.create[0].unitPrice).toBe(849);
+    expect(capturedCreateData.items.create[0].productName).toBe('Artisan Mug - Glazed Moss');
+    expect(capturedLogData.note).toContain('Variant: MUG-MOSS - Glazed Moss');
+  });
+
   it('places order successfully and returns 201 when atomic stock update succeeds', async () => {
     vi.mocked(getSessionUser).mockResolvedValue({
       userId: 'user_1',
@@ -183,5 +390,135 @@ describe('Place Order API Route', () => {
     expect(res.status).toBe(201);
     const body = await res.json();
     expect(body.order).toEqual(mockCreatedOrder);
+  });
+
+  it('applies free shipping when subtotal reaches free shipping threshold', async () => {
+    vi.mocked(getSessionUser).mockResolvedValue({
+      userId: 'user_1',
+      email: 'ananya@example.com',
+      name: 'Ananya',
+      role: 'CUSTOMER',
+    });
+
+    let capturedCreateData: any = null;
+
+    vi.mocked(prisma.$transaction).mockImplementation(async (callback: any) => {
+      const mockTx = {
+        product: {
+          findUnique: vi.fn()
+            .mockResolvedValueOnce({
+              id: 'p1',
+              name: 'Ceramic Vase',
+              price: 1600,
+              isActive: true,
+              stockQuantity: 5,
+              images: '["/vase.jpg"]',
+            })
+            .mockResolvedValueOnce({
+              stockQuantity: 4,
+            }),
+          updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+          update: vi.fn(),
+        },
+        inventoryLog: {
+          create: vi.fn().mockResolvedValue({ id: 'log_1' }),
+        },
+        storeSettings: {
+          findUnique: vi.fn().mockResolvedValue({
+            shippingFlatRate: 120,
+            freeShippingThreshold: 1500,
+          }),
+        },
+        order: {
+          create: vi.fn().mockImplementation(async (args) => {
+            capturedCreateData = args.data;
+            return { id: 'order_free_ship', ...args.data };
+          }),
+        },
+        cartItem: {
+          deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
+        },
+      };
+      return callback(mockTx as any);
+    });
+
+    const req = new Request('http://localhost:3000/api/orders/place', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        items: [{ productId: 'p1', qty: 1 }],
+        shippingAddress: validAddress,
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(201);
+    expect(capturedCreateData.shippingCharges).toBe(0);
+    expect(capturedCreateData.totalAmount).toBe(1600);
+  });
+
+  it('charges custom store settings flat rate shipping when below threshold', async () => {
+    vi.mocked(getSessionUser).mockResolvedValue({
+      userId: 'user_1',
+      email: 'ananya@example.com',
+      name: 'Ananya',
+      role: 'CUSTOMER',
+    });
+
+    let capturedCreateData: any = null;
+
+    vi.mocked(prisma.$transaction).mockImplementation(async (callback: any) => {
+      const mockTx = {
+        product: {
+          findUnique: vi.fn()
+            .mockResolvedValueOnce({
+              id: 'p1',
+              name: 'Small Candle',
+              price: 500,
+              isActive: true,
+              stockQuantity: 5,
+              images: '["/candle.jpg"]',
+            })
+            .mockResolvedValueOnce({
+              stockQuantity: 4,
+            }),
+          updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+          update: vi.fn(),
+        },
+        inventoryLog: {
+          create: vi.fn().mockResolvedValue({ id: 'log_1' }),
+        },
+        storeSettings: {
+          findUnique: vi.fn().mockResolvedValue({
+            shippingFlatRate: 150,
+            freeShippingThreshold: 1000,
+          }),
+        },
+        order: {
+          create: vi.fn().mockImplementation(async (args) => {
+            capturedCreateData = args.data;
+            return { id: 'order_flat_ship', ...args.data };
+          }),
+        },
+        cartItem: {
+          deleteMany: vi.fn().mockResolvedValue({ count: 1 }),
+        },
+      };
+      return callback(mockTx as any);
+    });
+
+    const req = new Request('http://localhost:3000/api/orders/place', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        items: [{ productId: 'p1', qty: 1 }],
+        shippingAddress: validAddress,
+      }),
+    });
+
+    const res = await POST(req);
+    expect(res.status).toBe(201);
+    expect(capturedCreateData.shippingCharges).toBe(150);
+    expect(capturedCreateData.totalAmount).toBe(650);
   });
 });

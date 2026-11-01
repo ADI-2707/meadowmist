@@ -14,6 +14,7 @@ describe('ReviewForm Component', () => {
     render(
       <ReviewForm
         productId="amber-candle-123"
+        productSlug="amber-candle-123"
         isLoggedIn={false}
         onReviewSubmitted={onReviewSubmitted}
       />
@@ -26,19 +27,39 @@ describe('ReviewForm Component', () => {
     expect(screen.queryByRole('button', { name: /submit review/i })).toBeNull();
   });
 
-  it('renders star selector and form fields when user is logged in', () => {
+  it('renders star selector, category aspects, and form fields when user is logged in', () => {
     render(
       <ReviewForm
         productId="amber-candle-123"
+        category="Candles"
         isLoggedIn={true}
         onReviewSubmitted={onReviewSubmitted}
       />
     );
 
     expect(screen.getByText('Leave an Artisan Review')).toBeDefined();
-    expect(screen.getByText('Your Rating')).toBeDefined();
+    expect(screen.getByText('Overall Rating')).toBeDefined();
+    expect(screen.getByText('Rate Product Features')).toBeDefined();
+    expect(screen.getByText('Scent Throw')).toBeDefined();
+    expect(screen.getByText('Burn Longevity')).toBeDefined();
+    expect(screen.getByText('Packaging Quality')).toBeDefined();
     expect(screen.getByLabelText(/your thoughts & experience/i)).toBeDefined();
     expect(screen.getByRole('button', { name: /submit review/i })).toBeDefined();
+  });
+
+  it('renders ceramics aspect sliders when category is ceramics', () => {
+    render(
+      <ReviewForm
+        productId="clay-vase-456"
+        category="Ceramics"
+        isLoggedIn={true}
+        onReviewSubmitted={onReviewSubmitted}
+      />
+    );
+
+    expect(screen.getByText('Craftsmanship')).toBeDefined();
+    expect(screen.getByText('Glaze Finish')).toBeDefined();
+    expect(screen.getByText('Durability')).toBeDefined();
   });
 
   it('shows validation error when submitting with less than 5 characters', async () => {
@@ -61,7 +82,7 @@ describe('ReviewForm Component', () => {
     ).toBeDefined();
   });
 
-  it('submits rating and comment successfully when valid', async () => {
+  it('submits rating, aspects, and comment successfully when valid', async () => {
     const mockNewReview = {
       id: 'new-rev-1',
       productId: 'amber-candle-123',
@@ -81,6 +102,7 @@ describe('ReviewForm Component', () => {
     render(
       <ReviewForm
         productId="amber-candle-123"
+        category="Candles"
         isLoggedIn={true}
         onReviewSubmitted={onReviewSubmitted}
       />

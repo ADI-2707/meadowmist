@@ -6,3 +6,4 @@ export * from './Topbar/Topbar';
 export * from './ShellLayout/ShellLayout';
 export * from './TopLoader/TopLoader';
 export * from './Pagination/Pagination';
+export * from './TabNav';

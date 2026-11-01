@@ -12,6 +12,15 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
+interface VariantFormItem {
+  id?: string;
+  sku: string;
+  name: string;
+  price: string;
+  salePrice: string;
+  stockQuantity: string;
+}
+
 export default function EditProductPage({ params }: Props) {
   const { id } = use(params);
   const router = useRouter();
@@ -43,6 +52,9 @@ export default function EditProductPage({ params }: Props) {
   const [waxTones, setWaxTones] = useState('');
   const [sizes, setSizes] = useState('');
   const [allowGiftMessage, setAllowGiftMessage] = useState(true);
+
+  const [variants, setVariants] = useState<VariantFormItem[]>([]);
+  const [deletedVariantIds, setDeletedVariantIds] = useState<string[]>([]);
 
   useEffect(() => {
     const load = async () => {
@@ -98,6 +110,19 @@ export default function EditProductPage({ params }: Props) {
               setAllowGiftMessage(Boolean(c.allowGiftMessage));
             } catch {
             }
+
+            if (p.variants && Array.isArray(p.variants)) {
+              setVariants(
+                p.variants.map((v: any) => ({
+                  id: v.id,
+                  sku: v.sku,
+                  name: v.name,
+                  price: v.price ? String(v.price) : '',
+                  salePrice: v.salePrice ? String(v.salePrice) : '',
+                  stockQuantity: String(v.stockQuantity ?? 0),
+                }))
+              );
+            }
           }
         }
       } catch (err) {
@@ -138,6 +163,37 @@ export default function EditProductPage({ params }: Props) {
 
   const handleRemoveImage = (index: number) => {
     setImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAddVariant = () => {
+    const baseSku = (slug || name || 'item').toUpperCase().replace(/[^A-Z0-9]/g, '-');
+    const count = variants.length + 1;
+    setVariants((prev) => [
+      ...prev,
+      {
+        sku: `${baseSku}-V${count}`,
+        name: `Edition ${count}`,
+        price: price || '',
+        salePrice: salePrice || '',
+        stockQuantity: '5',
+      },
+    ]);
+  };
+
+  const handleUpdateVariant = (index: number, field: keyof VariantFormItem, value: string) => {
+    setVariants((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], [field]: value };
+      return next;
+    });
+  };
+
+  const handleRemoveVariant = (index: number) => {
+    const target = variants[index];
+    if (target?.id) {
+      setDeletedVariantIds((prev) => [...prev, target.id!]);
+    }
+    setVariants((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -183,6 +239,15 @@ export default function EditProductPage({ params }: Props) {
           lowStockThreshold: Number(lowStockThreshold) || 5,
           isFeatured,
           isActive,
+          variants: variants.map((v) => ({
+            id: v.id,
+            sku: v.sku,
+            name: v.name,
+            price: v.price ? Number(v.price) : null,
+            salePrice: v.salePrice ? Number(v.salePrice) : null,
+            stockQuantity: Number(v.stockQuantity) || 0,
+          })),
+          deletedVariantIds,
         }),
       });
 
@@ -200,29 +265,31 @@ export default function EditProductPage({ params }: Props) {
   };
 
   if (fetching) {
-    return <div>Loading product details...</div>;
+    return (
+      <div className={styles.container}>
+        <div className={styles.emptyState}>Loading artisan piece details...</div>
+      </div>
+    );
   }
 
   return (
     <div className={styles.container}>
       <PageHeader
-        eyebrow="Product Catalog"
-        title={`Edit Product: ${name}`}
-        subtitle="Update pricing, photography, dimensions, and custom scent notes."
+        title={`Edit Piece: ${name}`}
+        subtitle="Update photography, studio inventory, SKU variants, and pricing"
         actions={
-          <Link href="/products" className={styles.editBtn}>
-            <ArrowLeft size={14} />
-            <span>Back to Products</span>
+          <Link href="/products" className={styles.secondaryBtn}>
+            <ArrowLeft size={16} /> Back to Catalog
           </Link>
         }
       />
 
       <form onSubmit={handleSubmit} className={styles.formCard}>
         <div className={styles.formSection}>
-          <h2 className={styles.sectionTitle}>1. Basic Details</h2>
+          <h2 className={styles.sectionTitle}>1. Basic Information</h2>
           <div className={styles.formGrid}>
-            <div className={`${styles.field} ${styles.formFull}`}>
-              <label className={styles.label}>Product Name *</label>
+            <div className={styles.field}>
+              <label className={styles.label}>Product Title *</label>
               <input
                 required
                 className={styles.input}
@@ -232,30 +299,17 @@ export default function EditProductPage({ params }: Props) {
             </div>
 
             <div className={styles.field}>
-              <label className={styles.label}>Slug</label>
+              <label className={styles.label}>URL Slug *</label>
               <input
+                required
                 className={styles.input}
                 value={slug}
                 onChange={(e) => setSlug(e.target.value)}
               />
             </div>
 
-            <div className={styles.field}>
-              <label className={styles.label}>Badge</label>
-              <select
-                className={styles.select}
-                value={badge}
-                onChange={(e) => setBadge(e.target.value)}
-              >
-                <option value="">None</option>
-                <option value="bestseller">Bestseller</option>
-                <option value="new">New Release</option>
-                <option value="limited">Limited Edition</option>
-              </select>
-            </div>
-
             <div className={`${styles.field} ${styles.formFull}`}>
-              <label className={styles.label}>Description / Story</label>
+              <label className={styles.label}>Description & Story</label>
               <textarea
                 rows={4}
                 className={styles.textarea}
@@ -270,28 +324,7 @@ export default function EditProductPage({ params }: Props) {
           <h2 className={styles.sectionTitle}>2. Pricing & Category</h2>
           <div className={styles.formGrid}>
             <div className={styles.field}>
-              <label className={styles.label}>Category</label>
-              <select
-                className={styles.select}
-                value={category}
-                onChange={(e) => setCategory(e.target.value as 'candle' | 'ceramic')}
-              >
-                <option value="candle">Candle</option>
-                <option value="ceramic">Ceramic Décor</option>
-              </select>
-            </div>
-
-            <div className={styles.field}>
-              <label className={styles.label}>Subcategory</label>
-              <input
-                className={styles.input}
-                value={subCategory}
-                onChange={(e) => setSubCategory(e.target.value)}
-              />
-            </div>
-
-            <div className={styles.field}>
-              <label className={styles.label}>Regular Price (₹) *</label>
+              <label className={styles.label}>Base Price (₹) *</label>
               <input
                 type="number"
                 required
@@ -310,61 +343,63 @@ export default function EditProductPage({ params }: Props) {
                 onChange={(e) => setSalePrice(e.target.value)}
               />
             </div>
+
+            <div className={styles.field}>
+              <label className={styles.label}>Category *</label>
+              <select
+                className={styles.select}
+                value={category}
+                onChange={(e) => setCategory(e.target.value as 'candle' | 'ceramic')}
+              >
+                <option value="candle">Soy Candle</option>
+                <option value="ceramic">Ceramic Piece</option>
+              </select>
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.label}>Sub-category</label>
+              <input
+                className={styles.input}
+                value={subCategory}
+                onChange={(e) => setSubCategory(e.target.value)}
+              />
+            </div>
           </div>
         </div>
 
         <div className={styles.formSection}>
-          <h2 className={styles.sectionTitle}>3. Product Photos</h2>
-          <div className={styles.uploadBox}>
-            <input
-              type="file"
-              accept="image/*"
-              id="upload-edit"
-              style={{ display: 'none' }}
-              onChange={handleImageUpload}
-              disabled={uploading}
-            />
-            <label htmlFor="upload-edit" style={{ cursor: 'pointer' }}>
-              <Upload size={24} style={{ display: 'block', margin: '0 auto 8px', color: 'var(--color-gold)' }} />
-              <span style={{ fontWeight: 600, color: 'var(--color-forest)' }}>
-                {uploading ? 'Uploading...' : '+ Upload Additional Photo'}
-              </span>
-            </label>
-          </div>
-
-          <div className={styles.imgPreviewGrid}>
-            {images.map((imgUrl, i) => (
-              <div key={i} className={styles.previewThumb}>
-                <Image src={imgUrl} alt={`Photo ${i}`} fill style={{ objectFit: 'cover' }} />
+          <h2 className={styles.sectionTitle}>3. Studio Photography</h2>
+          <div className={styles.imageGrid}>
+            {images.map((img, i) => (
+              <div key={i} className={styles.imageThumb}>
+                <Image src={img} alt="" fill sizes="100px" style={{ objectFit: 'cover' }} />
                 <button
                   type="button"
                   onClick={() => handleRemoveImage(i)}
-                  style={{
-                    position: 'absolute',
-                    top: '2px',
-                    right: '2px',
-                    background: 'rgba(0,0,0,0.6)',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: '50%',
-                    width: '20px',
-                    height: '20px',
-                    cursor: 'pointer',
-                    fontSize: '12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
+                  className={styles.removeImageBtn}
+                  title="Remove image"
                 >
                   ×
                 </button>
               </div>
             ))}
+
+            <label className={styles.uploadBox}>
+              <Upload size={24} />
+              <span>{uploading ? 'Uploading...' : 'Add Image'}</span>
+              <input
+                type="file"
+                accept="image/*"
+                disabled={uploading}
+                onChange={handleImageUpload}
+                style={{ display: 'none' }}
+              />
+            </label>
           </div>
         </div>
 
         <div className={styles.formSection}>
-          <h2 className={styles.sectionTitle}>4. Attributes & Customisation</h2>
+          <h2 className={styles.sectionTitle}>4. Attributes & Customizations</h2>
           <div className={styles.formGrid}>
             <div className={styles.field}>
               <label className={styles.label}>Color Family</label>
@@ -373,30 +408,48 @@ export default function EditProductPage({ params }: Props) {
                 value={colorFamily}
                 onChange={(e) => setColorFamily(e.target.value)}
               >
-                <option value="ivory">Ivory / Cream</option>
-                <option value="clay">Clay / Terracotta</option>
-                <option value="mauve">Mauve / Lavender</option>
-                <option value="blush">Blush Pink</option>
-                <option value="forest">Forest Moss</option>
-                <option value="gold">Amber Gold</option>
+                <option value="clay">Clay</option>
+                <option value="mauve">Mauve</option>
+                <option value="blush">Blush</option>
+                <option value="ivory">Ivory</option>
+                <option value="forest">Forest</option>
+                <option value="gold">Gold</option>
               </select>
             </div>
 
             <div className={styles.field}>
-              <label className={styles.label}>Scent Family</label>
+              <label className={styles.label}>Badge</label>
               <select
                 className={styles.select}
-                value={scentFamily}
-                onChange={(e) => setScentFamily(e.target.value)}
+                value={badge}
+                onChange={(e) => setBadge(e.target.value)}
               >
-                <option value="floral">Floral</option>
-                <option value="woody">Woody & Earthy</option>
-                <option value="fresh">Fresh & Herbal</option>
-                <option value="spice">Warm Spice & Amber</option>
+                <option value="">None</option>
+                <option value="bestseller">Bestseller</option>
+                <option value="new">New Release</option>
+                <option value="limited">Limited Edition</option>
               </select>
             </div>
 
-            <div className={`${styles.field} ${styles.formFull}`}>
+            <div className={styles.field}>
+              <label className={styles.label}>Materials (comma separated)</label>
+              <input
+                className={styles.input}
+                value={materials}
+                onChange={(e) => setMaterials(e.target.value)}
+              />
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.label}>Dimensions</label>
+              <input
+                className={styles.input}
+                value={dimensions}
+                onChange={(e) => setDimensions(e.target.value)}
+              />
+            </div>
+
+            <div className={styles.field}>
               <label className={styles.label}>Scent Notes (comma separated)</label>
               <input
                 className={styles.input}
@@ -445,7 +498,102 @@ export default function EditProductPage({ params }: Props) {
         </div>
 
         <div className={styles.formSection}>
-          <h2 className={styles.sectionTitle}>5. Stock & Publishing</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h2 className={styles.sectionTitle} style={{ margin: 0 }}>5. Multi-SKU Variants Manager</h2>
+            <button
+              type="button"
+              onClick={handleAddVariant}
+              className={styles.addBtn}
+              style={{ padding: '6px 14px', fontSize: '0.85rem' }}
+            >
+              + Add Variant SKU
+            </button>
+          </div>
+
+          {variants.length === 0 ? (
+            <p style={{ fontSize: '0.9rem', color: '#6b7280' }}>
+              No variants configured. This piece will sell under base product inventory.
+            </p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {variants.map((v, idx) => (
+                <div
+                  key={v.id || `new_${idx}`}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1.2fr 1.5fr 1fr 1fr auto',
+                    gap: '12px',
+                    alignItems: 'center',
+                    padding: '12px',
+                    background: '#f9fafb',
+                    borderRadius: '8px',
+                    border: '1px solid #e5e7eb',
+                  }}
+                >
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 600, display: 'block', marginBottom: '4px' }}>SKU</label>
+                    <input
+                      className={styles.input}
+                      value={v.sku}
+                      onChange={(e) => handleUpdateVariant(idx, 'sku', e.target.value)}
+                      placeholder="e.g. CANDLE-LAV-200"
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Variant Name</label>
+                    <input
+                      className={styles.input}
+                      value={v.name}
+                      onChange={(e) => handleUpdateVariant(idx, 'name', e.target.value)}
+                      placeholder="e.g. Lavender 200g"
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Price (₹ override)</label>
+                    <input
+                      type="number"
+                      className={styles.input}
+                      value={v.price}
+                      onChange={(e) => handleUpdateVariant(idx, 'price', e.target.value)}
+                      placeholder="Base price"
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 600, display: 'block', marginBottom: '4px' }}>Stock Units</label>
+                    <input
+                      type="number"
+                      className={styles.input}
+                      value={v.stockQuantity}
+                      onChange={(e) => handleUpdateVariant(idx, 'stockQuantity', e.target.value)}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div style={{ paddingTop: '18px' }}>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveVariant(idx)}
+                      style={{
+                        background: '#fee2e2',
+                        color: '#b91c1c',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '8px 12px',
+                        cursor: 'pointer',
+                        fontSize: '0.8rem',
+                        fontWeight: 600,
+                      }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className={styles.formSection}>
+          <h2 className={styles.sectionTitle}>6. Stock & Publishing</h2>
           <div className={styles.formGrid}>
             <div className={styles.field}>
               <label className={styles.label}>In-Stock Units *</label>

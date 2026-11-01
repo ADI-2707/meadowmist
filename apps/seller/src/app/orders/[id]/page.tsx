@@ -1,9 +1,9 @@
 'use client';
 
-import { use, useState, useEffect } from 'react';
+import React, { use, useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ArrowLeft, Truck, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Truck, CheckCircle2, AlertCircle, Printer } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { StockBadge } from '@/components/StockBadge/StockBadge';
 import styles from '../orders.module.css';
@@ -17,6 +17,9 @@ interface OrderDetail {
   orderNumber: string;
   createdAt: string;
   status: string;
+  isGuest?: boolean;
+  guestEmail?: string | null;
+  guestPhone?: string | null;
   subtotal: number;
   shippingCharges: number;
   discountAmount: number;
@@ -28,8 +31,11 @@ interface OrderDetail {
   refundedAmount: number;
   refundReason?: string | null;
   cancellationReason?: string | null;
+  cancelledAt?: string | null;
   returnReason?: string | null;
   returnStatus?: string | null;
+  returnRequestedAt?: string | null;
+  returnImages?: string | null;
   trackingNumber?: string | null;
   courierPartner?: string | null;
   courierStatus?: string | null;
@@ -42,6 +48,7 @@ interface OrderDetail {
   } | null;
   items: {
     id: string;
+    variantId?: string | null;
     productName: string;
     productImage: string;
     unitPrice: number;
@@ -103,7 +110,7 @@ export default function AdminOrderDetailPage({ params }: Props) {
         }),
       });
       if (res.ok) {
-        alert('Order status updated successfully');
+        alert('Order status updated');
         fetchOrder();
       }
     } catch {
@@ -111,28 +118,10 @@ export default function AdminOrderDetailPage({ params }: Props) {
     }
   };
 
-  const handleUpdateReturnStatus = async (newStatus: string) => {
-    try {
-      const res = await fetch(`/api/orders/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ returnStatus: newStatus }),
-      });
-      if (res.ok) {
-        alert(`Return status updated to ${newStatus}`);
-        fetchOrder();
-      } else {
-        alert('Failed to update return status');
-      }
-    } catch {
-      alert('Error updating return status');
-    }
-  };
-
   const handleUpdateCourier = async () => {
     try {
       const res = await fetch(`/api/orders/${id}/courier`, {
-        method: 'PATCH',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           trackingNumber,
@@ -141,11 +130,27 @@ export default function AdminOrderDetailPage({ params }: Props) {
         }),
       });
       if (res.ok) {
-        alert('Courier tracking details saved');
+        alert('Courier information updated');
         fetchOrder();
       }
     } catch {
-      alert('Failed to update tracking');
+      alert('Failed to update courier tracking');
+    }
+  };
+
+  const handleUpdateReturnStatus = async (status: string) => {
+    try {
+      const res = await fetch(`/api/orders/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ returnStatus: status }),
+      });
+      if (res.ok) {
+        alert(`Return marked as ${status}`);
+        fetchOrder();
+      }
+    } catch {
+      alert('Failed to update return status');
     }
   };
 
@@ -185,6 +190,18 @@ export default function AdminOrderDetailPage({ params }: Props) {
     address = {};
   }
 
+  let parsedReturnImages: string[] = [];
+  if (order.returnImages) {
+    try {
+      const parsed = JSON.parse(order.returnImages);
+      if (Array.isArray(parsed)) {
+        parsedReturnImages = parsed;
+      }
+    } catch {
+      parsedReturnImages = [];
+    }
+  }
+
   return (
     <div className={styles.container}>
       <PageHeader
@@ -200,6 +217,15 @@ export default function AdminOrderDetailPage({ params }: Props) {
         actions={
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <StockBadge status={order.status.toLowerCase() as any} />
+            <button
+              type="button"
+              onClick={() => window.print()}
+              className={styles.viewBtn}
+              style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            >
+              <Printer size={14} />
+              Print Packing Slip
+            </button>
             <Link href="/orders" className={styles.viewBtn}>
               <ArrowLeft size={14} style={{ display: 'inline', marginRight: '4px' }} />
               Back to Orders
@@ -207,6 +233,44 @@ export default function AdminOrderDetailPage({ params }: Props) {
           </div>
         }
       />
+
+      {order.status === 'CANCELLED' && (
+        <div
+          data-testid="cancellation-banner"
+          style={{
+            marginBottom: '20px',
+            padding: '16px 20px',
+            backgroundColor: '#fff5f5',
+            border: '1px solid #feb2b2',
+            borderLeft: '4px solid #e53e3e',
+            borderRadius: '6px',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '12px',
+          }}
+        >
+          <AlertCircle size={22} style={{ color: '#e53e3e', flexShrink: 0, marginTop: '2px' }} />
+          <div>
+            <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600, color: '#9b2c2c' }}>
+              Order Cancelled
+            </h3>
+            <p style={{ margin: '4px 0 0', fontSize: '0.88rem', color: '#742a2a' }}>
+              <strong>Cancellation Reason:</strong> {order.cancellationReason || 'No reason specified by customer'}
+            </p>
+            {order.cancelledAt && (
+              <p style={{ margin: '4px 0 0', fontSize: '0.78rem', color: '#718096' }}>
+                Cancelled on {new Date(order.cancelledAt).toLocaleString('en-IN', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className={styles.detailGrid}>
         <div>
@@ -249,39 +313,59 @@ export default function AdminOrderDetailPage({ params }: Props) {
               </div>
               {order.discountAmount > 0 && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', color: '#2f855a' }}>
-                  <span>Discount ({order.promoCode})</span>
+                  <span>Discount ({order.promoCode || 'PROMO'})</span>
                   <span>−₹{order.discountAmount.toLocaleString('en-IN')}</span>
                 </div>
               )}
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0 0', borderTop: '1px solid var(--color-gold-soft)', fontWeight: 700, fontSize: '1.2rem', color: 'var(--color-forest)' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  padding: '8px 0',
+                  marginTop: '8px',
+                  borderTop: '1px dashed var(--color-gold)',
+                  fontWeight: 700,
+                  fontSize: '1.15rem',
+                  color: 'var(--color-forest)',
+                }}
+              >
                 <span>Total Amount</span>
                 <span>₹{order.totalAmount.toLocaleString('en-IN')}</span>
               </div>
             </div>
           </div>
 
-          <div className={styles.card}>
-            <h2 className={styles.cardTitle}>Customer & Delivery Address</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', fontSize: '0.9rem' }}>
+          <div className={styles.card} style={{ marginTop: '20px' }}>
+            <h2 className={styles.cardTitle}>Shipping & Customer Contact</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '12px' }}>
               <div>
-                <p style={{ fontWeight: 600, color: 'var(--color-forest)' }}>Customer Details</p>
-                <p>{order.user?.name || address.fullName || 'Customer'}</p>
-                <p>{order.user?.email}</p>
-                <p>Phone: {order.user?.phone || address.phone || '—'}</p>
+                <p style={{ fontWeight: 600, color: 'var(--color-forest)' }}>Delivery Address</p>
+                <p style={{ fontSize: '0.88rem', marginTop: '4px' }}>{address.fullName || order.user?.name}</p>
+                <p style={{ fontSize: '0.88rem' }}>{address.streetAddress}</p>
+                {address.apartment && <p style={{ fontSize: '0.88rem' }}>{address.apartment}</p>}
+                <p style={{ fontSize: '0.88rem' }}>
+                  {address.city}, {address.state} - {address.postalCode}
+                </p>
+                <p style={{ fontSize: '0.88rem' }}>Phone: {address.phone || order.guestPhone || order.user?.phone || 'Not provided'}</p>
               </div>
+
               <div>
-                <p style={{ fontWeight: 600, color: 'var(--color-forest)' }}>Shipping Destination</p>
-                <p>{address.fullName}</p>
-                <p>{address.streetAddress}{address.apartment ? `, ${address.apartment}` : ''}</p>
-                <p>{address.city}, {address.state} - {address.postalCode}</p>
-                <p>Country: {address.country || 'India'}</p>
+                <p style={{ fontWeight: 600, color: 'var(--color-forest)' }}>Customer Account</p>
+                <p style={{ fontSize: '0.88rem', marginTop: '4px' }}>
+                  {order.isGuest ? 'Guest Checkout' : (order.user?.name || 'Registered Customer')}
+                </p>
+                <p style={{ fontSize: '0.88rem' }}>Email: {order.guestEmail || order.user?.email || '—'}</p>
+                <p style={{ fontSize: '0.88rem', marginTop: '8px', fontWeight: 600, color: 'var(--color-forest)' }}>Payment</p>
+                <p style={{ fontSize: '0.88rem' }}>Method: {order.paymentMethod}</p>
+                <p style={{ fontSize: '0.88rem' }}>Status: {order.paymentStatus}</p>
+                {order.paymentRef && <p style={{ fontSize: '0.88rem' }}>Ref: {order.paymentRef}</p>}
               </div>
             </div>
 
             {order.customerNotes && (
-              <div style={{ marginTop: '16px', background: 'var(--color-canvas)', padding: '12px', borderRadius: '4px' }}>
-                <p style={{ fontWeight: 600, fontSize: '0.8rem', color: 'var(--color-gold)' }}>Customer Delivery Instruction:</p>
-                <p style={{ fontSize: '0.85rem' }}>{order.customerNotes}</p>
+              <div style={{ marginTop: '16px', padding: '12px', background: 'var(--color-canvas)', borderRadius: '6px' }}>
+                <p style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--color-forest)' }}>Customer Gift / Special Note:</p>
+                <p style={{ fontSize: '0.88rem', fontStyle: 'italic', marginTop: '4px' }}>&ldquo;{order.customerNotes}&rdquo;</p>
               </div>
             )}
           </div>
@@ -289,53 +373,49 @@ export default function AdminOrderDetailPage({ params }: Props) {
 
         <div>
           <div className={styles.card}>
-            <h2 className={styles.cardTitle}>Fulfillment Status</h2>
+            <h2 className={styles.cardTitle}>Update Order Status</h2>
             <div className={styles.controlField}>
-              <label>Order Lifecycle State</label>
+              <label>Fulfillment Status</label>
               <select value={orderStatus} onChange={(e) => setOrderStatus(e.target.value)}>
-                <option value="PENDING">PENDING (Awaiting preparation)</option>
-                <option value="PROCESSING">PROCESSING (Poured & Packing)</option>
-                <option value="SHIPPED">SHIPPED (In Transit)</option>
-                <option value="DELIVERED">DELIVERED (Doorstep Handover)</option>
-                <option value="CANCELLED">CANCELLED (Restock Inventory)</option>
+                <option value="PENDING">Pending Studio Review</option>
+                <option value="PROCESSING">Crafting / In Progress</option>
+                <option value="SHIPPED">Handed to Courier</option>
+                <option value="DELIVERED">Delivered</option>
+                <option value="CANCELLED">Cancelled</option>
               </select>
             </div>
 
             <div className={styles.controlField}>
               <label>Payment Status</label>
               <select value={paymentStatus} onChange={(e) => setPaymentStatus(e.target.value)}>
-                <option value="PENDING">PENDING (e.g. COD unpaid)</option>
-                <option value="PAID">PAID (Online verified / Cash collected)</option>
-                <option value="REFUNDED">REFUNDED</option>
-                <option value="FAILED">FAILED</option>
+                <option value="PENDING">Pending Payment</option>
+                <option value="PAID">Paid / Captured</option>
+                <option value="REFUNDED">Refunded</option>
               </select>
             </div>
 
             <button onClick={handleUpdateStatus} className={styles.saveBtn}>
-              <CheckCircle2 size={14} style={{ display: 'inline', marginRight: '6px' }} />
-              Update Status
+              Save Status Changes
             </button>
           </div>
 
-          <div className={styles.card}>
-            <h2 className={styles.cardTitle}>Courier & Shipment Tracking</h2>
+          <div className={styles.card} style={{ marginTop: '20px' }}>
+            <h2 className={styles.cardTitle}>Courier & Dispatch Tracking</h2>
             <div className={styles.controlField}>
-              <label>Courier Partner</label>
-              <select value={courierPartner} onChange={(e) => setCourierPartner(e.target.value)}>
-                <option value="Delhivery">Delhivery</option>
-                <option value="Bluedart">Blue Dart Express</option>
-                <option value="Shiprocket">Shiprocket</option>
-                <option value="DTDC">DTDC</option>
-                <option value="IndiaPost">India Post Speed Post</option>
-              </select>
+              <label>Courier Service</label>
+              <input
+                value={courierPartner}
+                onChange={(e) => setCourierPartner(e.target.value)}
+                placeholder="Delhivery, BlueDart, IndiaPost"
+              />
             </div>
 
             <div className={styles.controlField}>
-              <label>Air Waybill (AWB) / Tracking Number</label>
+              <label>AWB / Tracking Number</label>
               <input
                 value={trackingNumber}
                 onChange={(e) => setTrackingNumber(e.target.value)}
-                placeholder="e.g. DEL123456789IN"
+                placeholder="e.g. DL123456789IN"
               />
             </div>
 
@@ -344,37 +424,23 @@ export default function AdminOrderDetailPage({ params }: Props) {
               <input
                 value={courierStatus}
                 onChange={(e) => setCourierStatus(e.target.value)}
-                placeholder="e.g. Out for Delivery Mumbai Hub"
+                placeholder="Dispatched from Mumbai Hub"
               />
             </div>
 
             <button onClick={handleUpdateCourier} className={styles.saveBtn}>
-              <Truck size={14} style={{ display: 'inline', marginRight: '6px' }} />
-              Save Courier Tracking
+              Update Courier Info
             </button>
           </div>
 
-          {(order.returnStatus === 'REQUESTED' || order.cancellationReason || order.returnReason) && (
-            <div className={styles.card} style={{ borderColor: '#fbd38d' }}>
-              <h2 className={styles.cardTitle} style={{ color: '#c53030' }}>
-                <AlertCircle size={16} style={{ display: 'inline', marginRight: '6px' }} />
-                Returns & Cancellations
-              </h2>
-
-              {order.cancellationReason && (
-                <div style={{ marginBottom: '16px' }}>
-                  <p style={{ fontWeight: 600, fontSize: '0.8rem' }}>Cancellation Reason:</p>
-                  <p style={{ fontSize: '0.85rem' }}>{order.cancellationReason}</p>
-                </div>
-              )}
-
+          {(order.returnReason || parsedReturnImages.length > 0 || order.refundedAmount > 0) && (
+            <div className={styles.card} style={{ marginTop: '20px', borderLeft: '4px solid #c53030' }}>
+              <h2 className={styles.cardTitle} style={{ color: '#c53030' }}>Return & Refund Center</h2>
               {order.returnReason && (
-                <div style={{ marginBottom: '16px', background: '#fffaf0', padding: '12px', borderRadius: '6px', border: '1px solid #feebc8' }}>
-                  <p style={{ fontWeight: 600, fontSize: '0.8rem', color: '#7b341e' }}>Customer Return Request:</p>
-                  <p style={{ fontSize: '0.85rem', margin: '4px 0 8px', color: '#2d3748' }}>{order.returnReason}</p>
-                  <p style={{ fontSize: '0.8rem', fontWeight: 600, color: order.returnStatus === 'APPROVED' ? '#2b6cb0' : order.returnStatus === 'REJECTED' ? '#c53030' : '#d69e2e' }}>
-                    Current Return Status: {order.returnStatus}
-                  </p>
+                <div style={{ marginBottom: '12px' }}>
+                  <p style={{ fontWeight: 600, fontSize: '0.85rem' }}>Customer Return Request:</p>
+                  <p style={{ fontSize: '0.88rem', marginTop: '2px' }}>{order.returnReason}</p>
+                  <p style={{ fontSize: '0.8rem', color: '#718096', marginTop: '2px' }}>Current Status: {order.returnStatus}</p>
 
                   {order.returnStatus === 'REQUESTED' && (
                     <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
@@ -394,6 +460,55 @@ export default function AdminOrderDetailPage({ params }: Props) {
                       </button>
                     </div>
                   )}
+                </div>
+              )}
+
+              {parsedReturnImages.length > 0 && (
+                <div
+                  data-testid="damage-photo-gallery"
+                  style={{
+                    margin: '14px 0',
+                    padding: '12px',
+                    backgroundColor: '#fffaf0',
+                    border: '1px solid #feebc8',
+                    borderRadius: '6px',
+                  }}
+                >
+                  <p style={{ fontWeight: 600, fontSize: '0.85rem', color: '#7b341e', margin: '0 0 8px' }}>
+                    Customer Damage & Breakage Photo Evidence:
+                  </p>
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    {parsedReturnImages.map((imgUrl, idx) => (
+                      <a
+                        key={idx}
+                        href={imgUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          position: 'relative',
+                          width: '84px',
+                          height: '84px',
+                          borderRadius: '6px',
+                          overflow: 'hidden',
+                          border: '2px solid #dd6b20',
+                          display: 'block',
+                          backgroundColor: '#f7fafc',
+                        }}
+                        title="Click to view full image in new tab"
+                      >
+                        <Image
+                          src={imgUrl}
+                          alt={`Transit damage evidence ${idx + 1}`}
+                          fill
+                          sizes="84px"
+                          style={{ objectFit: 'cover' }}
+                        />
+                      </a>
+                    ))}
+                  </div>
+                  <p style={{ fontSize: '0.74rem', color: '#9c4221', margin: '6px 0 0', fontStyle: 'italic' }}>
+                    Click thumbnail to view full-resolution photo evidence.
+                  </p>
                 </div>
               )}
 
@@ -422,6 +537,89 @@ export default function AdminOrderDetailPage({ params }: Props) {
             </div>
           )}
         </div>
+      </div>
+
+      <div className={styles.printOnlySlip}>
+        <header className={styles.slipHeader}>
+          <div>
+            <h1 className={styles.slipTitle}>Meadow Mist Studio</h1>
+            <p className={styles.slipSubtitle}>Handcrafted Botanical Candles &amp; Wheel-Thrown Ceramics</p>
+            <p className={styles.slipSubtitle}>Small-Batch Artisan Workshop · Dispatch Verification</p>
+          </div>
+          <div className={styles.slipOrderMeta}>
+            <strong>Order #{order.orderNumber}</strong>
+            <div>Date: {new Date(order.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+            <div>Payment: {order.paymentMethod} ({order.paymentStatus})</div>
+          </div>
+        </header>
+
+        <section className={styles.slipCustomerGrid}>
+          <div>
+            <h2 className={styles.slipSectionHeading}>Delivery Recipient</h2>
+            <p className={styles.slipText}><strong>{address.fullName || order.user?.name || 'Customer'}</strong></p>
+            <p className={styles.slipText}>{address.streetAddress}{address.apartment ? `, ${address.apartment}` : ''}</p>
+            <p className={styles.slipText}>{address.city}, {address.state} - {address.postalCode}</p>
+            <p className={styles.slipText}>Phone: {address.phone || order.guestPhone || order.user?.phone || '—'}</p>
+            <p className={styles.slipText}>Email: {order.guestEmail || order.user?.email || '—'}</p>
+          </div>
+
+          <div>
+            <h2 className={styles.slipSectionHeading}>Dispatch &amp; Courier Details</h2>
+            <p className={styles.slipText}>Carrier: {order.courierPartner || 'Artisan Direct'}</p>
+            <p className={styles.slipText}>Tracking: {order.trackingNumber || 'Pending Dispatch'}</p>
+            <p className={styles.slipText}>Order Status: {order.status}</p>
+          </div>
+
+          {order.customerNotes && (
+            <div className={styles.slipGiftNote}>
+              <strong>Customer Note / Gift Request:</strong>
+              <div>&ldquo;{order.customerNotes}&rdquo;</div>
+            </div>
+          )}
+        </section>
+
+        <table className={styles.slipTable}>
+          <thead>
+            <tr>
+              <th style={{ width: '40px' }}>[✓]</th>
+              <th>Artisan Piece &amp; Options</th>
+              <th>Options / Finish</th>
+              <th style={{ textAlign: 'center', width: '50px' }}>Qty</th>
+              <th style={{ textAlign: 'right', width: '90px' }}>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {order.items.map((item) => (
+              <tr key={item.id}>
+                <td style={{ textAlign: 'center', fontSize: '14px' }}>[ &nbsp; ]</td>
+                <td>
+                  <strong>{item.productName}</strong>
+                  {item.customNotes && (
+                    <div style={{ fontSize: '11px', color: '#6b7280' }}>Card Note: &ldquo;{item.customNotes}&rdquo;</div>
+                  )}
+                </td>
+                <td>
+                  {[item.selectedFragrance, item.selectedColor, item.selectedSize].filter(Boolean).join(' · ') || 'Standard'}
+                </td>
+                <td style={{ textAlign: 'center', fontWeight: 600 }}>{item.quantity}</td>
+                <td style={{ textAlign: 'right' }}>₹{item.lineTotal.toLocaleString('en-IN')}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <footer className={styles.slipSignoff}>
+          <div>
+            <p style={{ margin: '0 0 6px' }}><strong>Artisan Quality Guarantee</strong></p>
+            <p style={{ margin: 0, color: '#4b5563', lineHeight: 1.4 }}>
+              Every item in this parcel was inspected by hand, wrapped in eco-friendly protective padding, and prepared for safe transit.
+            </p>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <p style={{ margin: '0 0 16px' }}>Packer: <span className={styles.slipSignLine}></span></p>
+            <p style={{ margin: 0 }}>Date: <span className={styles.slipSignLine}></span></p>
+          </div>
+        </footer>
       </div>
     </div>
   );

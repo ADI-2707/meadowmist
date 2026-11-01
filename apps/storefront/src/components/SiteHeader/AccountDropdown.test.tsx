@@ -18,11 +18,14 @@ describe('AccountDropdown Component', () => {
       user: null,
       isAuthenticated: false,
       isLoading: false,
+      checkAuth: vi.fn().mockResolvedValue(undefined),
     });
   });
 
-  it('renders guest trigger and opens guest options on click', () => {
-    render(<AccountDropdown />);
+  it('renders guest trigger and opens guest options on click', async () => {
+    await act(async () => {
+      render(<AccountDropdown />);
+    });
 
     expect(screen.getByText('Sign in')).toBeDefined();
     expect(screen.getByText('Account')).toBeDefined();
@@ -37,7 +40,7 @@ describe('AccountDropdown Component', () => {
     expect(screen.getByText('Track Orders')).toBeDefined();
   });
 
-  it('renders authenticated trigger and opens user links on click', () => {
+  it('renders authenticated trigger and opens user links on click', async () => {
     useAuthStore.setState({
       user: {
         id: 'usr_42',
@@ -46,9 +49,12 @@ describe('AccountDropdown Component', () => {
       },
       isAuthenticated: true,
       isLoading: false,
+      checkAuth: vi.fn().mockResolvedValue(undefined),
     });
 
-    render(<AccountDropdown />);
+    await act(async () => {
+      render(<AccountDropdown />);
+    });
 
     expect(screen.getByText('Hello')).toBeDefined();
     expect(screen.getByText('Aarav')).toBeDefined();
@@ -68,7 +74,9 @@ describe('AccountDropdown Component', () => {
   });
 
   it('triggers exit animation when Escape key is pressed', async () => {
-    render(<AccountDropdown />);
+    await act(async () => {
+      render(<AccountDropdown />);
+    });
 
     const trigger = screen.getByRole('button', { name: /account menu/i });
     act(() => {

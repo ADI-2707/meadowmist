@@ -4,6 +4,7 @@ import { getSessionUser } from '@/lib/session';
 
 interface RequestItem {
   productId: string;
+  variantId?: string;
   qty?: number;
   quantity?: number;
   selectedFragrance?: string;
@@ -16,7 +17,7 @@ export async function POST(request: Request) {
   try {
     const session = await getSessionUser();
     if (!session) {
-      return NextResponse.json({ error: 'Please sign in to place your order' }, { status: 401 });
+      return NextResponse.json({ error: 'Please sign in to place an order' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -34,6 +35,7 @@ export async function POST(request: Request) {
       let verifiedSubtotal = 0;
       const orderItemsToCreate: {
         productId: string;
+        variantId?: string | null;
         productName: string;
         productImage: string;
         unitPrice: number;
@@ -53,6 +55,55 @@ export async function POST(request: Request) {
 
         if (!product || !product.isActive) {
           throw new Error(`Product ${product?.name || reqItem.productId} is no longer available`);
+        }
+
+        let variant: {
+          id: string;
+          productId: string;
+          sku: string;
+          name: string;
+          price: number | null;
+          salePrice: number | null;
+          stockQuantity: number;
+          inStock: boolean;
+        } | null = null;
+
+        if (reqItem.variantId) {
+          variant = await tx.productVariant.findUnique({
+            where: { id: reqItem.variantId },
+          });
+
+          if (!variant || variant.productId !== product.id) {
+            throw new Error(`Selected variant is not available for "${product.name}"`);
+          }
+
+          const variantUpdate = await tx.productVariant.updateMany({
+            where: {
+              id: variant.id,
+              stockQuantity: { gte: qty },
+            },
+            data: {
+              stockQuantity: { decrement: qty },
+            },
+          });
+
+          if (variantUpdate.count === 0) {
+            throw new Error(
+              `Insufficient stock for variant "${variant.name}". Only ${variant.stockQuantity} piece${variant.stockQuantity === 1 ? '' : 's'} remaining.`
+            );
+          }
+
+          const updatedVariant = await tx.productVariant.findUnique({
+            where: { id: variant.id },
+            select: { stockQuantity: true },
+          });
+          const newVariantStock = updatedVariant?.stockQuantity ?? 0;
+          if (newVariantStock === 0) {
+            await tx.productVariant.update({
+              where: { id: variant.id },
+              data: { inStock: false },
+            });
+          }
         }
 
         const updateResult = await tx.product.updateMany({
@@ -91,11 +142,11 @@ export async function POST(request: Request) {
             changeQuantity: -qty,
             newQuantity: newStock,
             reason: 'ORDER_PLACED',
-            note: `Order placed by user ${session.email}`,
+            note: `Order placed by customer ${session.email}${variant ? ` (Variant: ${variant.sku} - ${variant.name})` : ''}`,
           },
         });
 
-        const effectivePrice = product.salePrice ?? product.price;
+        const effectivePrice = variant?.salePrice ?? variant?.price ?? product.salePrice ?? product.price;
         const lineTotal = effectivePrice * qty;
         verifiedSubtotal += lineTotal;
 
@@ -109,7 +160,8 @@ export async function POST(request: Request) {
 
         orderItemsToCreate.push({
           productId: product.id,
-          productName: product.name,
+          variantId: variant ? variant.id : null,
+          productName: variant ? `${product.name} - ${variant.name}` : product.name,
           productImage: primaryImage,
           unitPrice: effectivePrice,
           quantity: qty,
@@ -155,7 +207,10 @@ export async function POST(request: Request) {
         }
       }
 
-      const shippingCharges = verifiedSubtotal >= 1499 ? 0 : 99;
+      const settings = tx.storeSettings ? await tx.storeSettings.findUnique({ where: { id: 'default' } }) : null;
+      const flatRate = settings?.shippingFlatRate ?? 99;
+      const freeThreshold = settings?.freeShippingThreshold ?? 1499;
+      const shippingCharges = verifiedSubtotal >= freeThreshold ? 0 : flatRate;
       const totalAmount = Math.max(0, verifiedSubtotal + shippingCharges - discount);
 
       const timestampSuffix = Date.now().toString().slice(-4);
@@ -166,6 +221,9 @@ export async function POST(request: Request) {
         data: {
           orderNumber,
           userId: session.userId,
+          isGuest: false,
+          guestEmail: null,
+          guestPhone: null,
           status: 'PENDING',
           subtotal: verifiedSubtotal,
           shippingCharges,

@@ -1,0 +1,38 @@
+.page {
+  padding: 3rem 0 5rem;
+}
+
+.header {
+  text-align: center;
+  max-width: 640px;
+  margin: 0 auto 3rem;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.85rem;
+  color: var(--color-clay-600, #ad6e33);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.title {
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 2.5rem;
+  font-weight: 500;
+  color: var(--color-moss-900, #1b2c22);
+  margin-bottom: 0.75rem;
+}
+
+.subtitle {
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--color-charcoal-700, #4a4a4a);
+}
+
+.emptyState {
+  text-align: center;
+  padding: 3rem;
+  color: var(--color-charcoal-600, #666);
+}

@@ -11,6 +11,9 @@ export async function GET(request: Request, context: RouteContext) {
     const { id } = await context.params;
     const product = await prisma.product.findUnique({
       where: { id },
+      include: {
+        variants: true,
+      },
     });
 
     if (!product) {

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { getProductBySlug, getRelatedProducts, getAllSlugs } from '@/lib/getProducts';
+import { getStoreSettings } from '@/lib/cms';
 import PriceTag from '@/components/PriceTag/PriceTag';
 import ScentBadge from '@/components/ScentBadge/ScentBadge';
 import FeaturedCategory from '@/components/FeaturedCategory/FeaturedCategory';
@@ -24,20 +25,38 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const product = await getProductBySlug(slug);
   if (!product) return { title: 'Product Not Found' };
+
+  const description = product.story ? product.story.slice(0, 155) : 'Small-batch artisanal piece by Meadow Mist.';
+  const primaryImage = product.images[0] || '/images/logo.jpg';
+
   return {
     title: product.name,
-    description: product.story.slice(0, 155),
+    description,
     openGraph: {
       title: `${product.name} | Meadow Mist`,
-      description: product.story.slice(0, 155),
-      images: [{ url: product.images[0], width: 800, height: 600, alt: product.name }],
+      description,
+      type: 'website',
+      url: `https://meadowmist.in/product/${slug}`,
+      images: [{ url: primaryImage, width: 800, height: 600, alt: product.name }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${product.name} | Meadow Mist`,
+      description,
+      images: [primaryImage],
+    },
+    alternates: {
+      canonical: `https://meadowmist.in/product/${slug}`,
     },
   };
 }
 
 export default async function ProductPage({ params }: Props) {
   const { slug } = await params;
-  const product = await getProductBySlug(slug);
+  const [product, settings] = await Promise.all([
+    getProductBySlug(slug),
+    getStoreSettings(),
+  ]);
   if (!product) notFound();
 
   const related = await getRelatedProducts(product.slug, product.category, 3);
@@ -76,12 +95,12 @@ export default async function ProductPage({ params }: Props) {
             <h1 className={styles.name}>{product.name}</h1>
 
             {product.averageRating !== undefined && product.reviewCount !== undefined && product.reviewCount > 0 && (
-              <div className={styles.ratingHeaderRow}>
+              <a href="#customer-reviews" className={styles.ratingHeaderRow}>
                 <StarRating rating={product.averageRating} />
                 <span className={styles.ratingHeaderText}>
                   {product.averageRating.toFixed(1)} ({product.reviewCount} {product.reviewCount === 1 ? 'review' : 'reviews'})
                 </span>
-              </div>
+              </a>
             )}
 
             <PriceTag price={product.price} salePrice={product.salePrice} />
@@ -104,19 +123,16 @@ export default async function ProductPage({ params }: Props) {
               </ul>
             </div>
 
-            {product.dimensions && (
-              <div className={styles.dimensions}>
-                <p className={styles.detailLabel}>Dimensions</p>
-                <p>{product.dimensions}</p>
-              </div>
-            )}
+            <div className={styles.dimensions}>
+              <p className={styles.detailLabel}>Dimensions</p>
+              <p>{product.dimensions || 'Handcrafted dimensions vary slightly per piece.'}</p>
+            </div>
 
             <div className={styles.makingOf}>
               <p className={styles.makingOfLabel}>The making of</p>
               <p className={styles.makingOfText}>
-                Each piece is made in small batches — the variations in texture, glaze,
-                and finish are a feature, not a flaw. Your piece will be similar to
-                the photographs, and deliberately not identical.
+                {settings?.aboutArtisanNote ||
+                  'Each piece is made in small batches — the variations in texture, glaze, and finish are a feature, not a flaw. Your piece will be similar to the photographs, and deliberately not identical.'}
               </p>
             </div>
 
@@ -126,7 +142,9 @@ export default async function ProductPage({ params }: Props) {
           </div>
         </div>
 
-        <ProductReviewsSection productId={product.id} productSlug={product.slug} />
+        <div id="customer-reviews" style={{ scrollMarginTop: "100px" }}>
+          <ProductReviewsSection productId={product.id} productSlug={product.slug} category={product.category} />
+        </div>
 
         {related.length > 0 && (
           <>

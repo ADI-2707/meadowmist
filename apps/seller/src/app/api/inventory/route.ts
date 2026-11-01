@@ -57,6 +57,16 @@ export async function GET(request: Request) {
       products = targetIds.length > 0
         ? await prisma.product.findMany({
             where: { id: { in: targetIds } },
+            include: {
+              variants: true,
+              _count: {
+                select: {
+                  restockAlerts: {
+                    where: { notified: false },
+                  },
+                },
+              },
+            },
             orderBy: [{ stockQuantity: 'asc' }, { name: 'asc' }],
           })
         : [];
@@ -79,6 +89,16 @@ export async function GET(request: Request) {
         prisma.product.count({ where: whereClause }),
         prisma.product.findMany({
           where: whereClause,
+          include: {
+            variants: true,
+            _count: {
+              select: {
+                restockAlerts: {
+                  where: { notified: false },
+                },
+              },
+            },
+          },
           orderBy: [{ stockQuantity: 'asc' }, { name: 'asc' }],
           ...(isPaginated ? { skip, take: limit } : {}),
         }),
@@ -97,10 +117,10 @@ export async function GET(request: Request) {
         outOfStockCount,
       },
       pagination: {
-        page: isPaginated ? page : 1,
-        limit: isPaginated ? limit : total,
+        page,
+        limit,
         total,
-        totalPages: isPaginated ? Math.ceil(total / limit) : 1,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
       },
     });
   } catch (error) {
@@ -117,7 +137,52 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json();
-    const { productId, changeQuantity, newQuantity, reason = 'MANUAL_ADJUSTMENT', note } = body;
+    const { productId, variantId, changeQuantity, newQuantity, reason = 'MANUAL_ADJUSTMENT', note } = body;
+
+    if (variantId) {
+      const variant = await prisma.productVariant.findUnique({
+        where: { id: variantId },
+      });
+
+      if (!variant) {
+        return NextResponse.json({ error: 'Variant not found' }, { status: 404 });
+      }
+
+      let targetStock = variant.stockQuantity;
+      let delta = 0;
+
+      if (newQuantity !== undefined) {
+        targetStock = Math.max(0, Number(newQuantity));
+        delta = targetStock - variant.stockQuantity;
+      } else if (changeQuantity !== undefined) {
+        delta = Number(changeQuantity);
+        targetStock = Math.max(0, variant.stockQuantity + delta);
+      }
+
+      const updatedVariant = await prisma.$transaction(async (tx) => {
+        const v = await tx.productVariant.update({
+          where: { id: variantId },
+          data: {
+            stockQuantity: targetStock,
+            inStock: targetStock > 0,
+          },
+        });
+
+        await tx.inventoryLog.create({
+          data: {
+            productId: variant.productId,
+            changeQuantity: delta,
+            newQuantity: targetStock,
+            reason: String(reason),
+            note: note ? String(note).trim() : `Variant stock update: ${variant.sku}`,
+          },
+        });
+
+        return v;
+      });
+
+      return NextResponse.json({ variant: updatedVariant });
+    }
 
     if (!productId) {
       return NextResponse.json({ error: 'productId is required' }, { status: 400 });

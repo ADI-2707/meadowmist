@@ -1,5 +1,11 @@
 import { cookies } from 'next/headers';
-import { verifyToken, TokenPayload, ADMIN_COOKIE_NAME } from '@meadowmist/shared';
+import {
+  verifyToken,
+  TokenPayload,
+  ADMIN_COOKIE_NAME,
+  TRUSTED_DEVICE_COOKIE_NAME,
+  TRUSTED_DEVICE_MAX_AGE,
+} from '@meadowmist/shared';
 
 export { ADMIN_COOKIE_NAME };
 
@@ -12,6 +18,22 @@ export async function setAdminSessionCookie(token: string): Promise<void> {
     path: '/',
     maxAge: 60 * 60 * 24 * 7,
   });
+}
+
+export async function setTrustedDeviceCookie(rawToken: string): Promise<void> {
+  const cookieStore = await cookies();
+  cookieStore.set(TRUSTED_DEVICE_COOKIE_NAME, rawToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: TRUSTED_DEVICE_MAX_AGE,
+  });
+}
+
+export async function getTrustedDeviceToken(): Promise<string | null> {
+  const cookieStore = await cookies();
+  return cookieStore.get(TRUSTED_DEVICE_COOKIE_NAME)?.value || null;
 }
 
 export async function clearAdminSessionCookie(): Promise<void> {

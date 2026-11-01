@@ -1,8 +1,8 @@
 import React from 'react';
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import RatingSummary from './RatingSummary';
-import type { RatingDistribution } from '@meadowmist/shared';
+import type { RatingDistribution, AspectScore } from '@meadowmist/shared';
 
 describe('RatingSummary Component', () => {
   it('renders overall average score and review count pluralization', () => {
@@ -61,5 +61,70 @@ describe('RatingSummary Component', () => {
 
     expect(screen.getByText('0.0')).toBeDefined();
     expect(screen.getByText('0 reviews')).toBeDefined();
+  });
+
+  it('triggers onSelectRating when clicking a star row', () => {
+    const distribution: RatingDistribution = {
+      average: 4.0,
+      total: 5,
+      counts: { 5: 3, 4: 2, 3: 0, 2: 0, 1: 0 },
+    };
+    const onSelect = vi.fn();
+
+    render(
+      <RatingSummary
+        distribution={distribution}
+        selectedRating={null}
+        onSelectRating={onSelect}
+      />
+    );
+
+    fireEvent.click(screen.getByLabelText('Filter by 5 star reviews (3)'));
+    expect(onSelect).toHaveBeenCalledWith(5);
+  });
+
+  it('toggles rating off when clicking currently selected star row', () => {
+    const distribution: RatingDistribution = {
+      average: 4.0,
+      total: 5,
+      counts: { 5: 3, 4: 2, 3: 0, 2: 0, 1: 0 },
+    };
+    const onSelect = vi.fn();
+
+    render(
+      <RatingSummary
+        distribution={distribution}
+        selectedRating={5}
+        onSelectRating={onSelect}
+      />
+    );
+
+    fireEvent.click(screen.getByLabelText('Filter by 5 star reviews (3)'));
+    expect(onSelect).toHaveBeenCalledWith(null);
+  });
+
+  it('renders aspect score meters when aspectScores are provided', () => {
+    const distribution: RatingDistribution = {
+      average: 4.8,
+      total: 4,
+      counts: { 5: 4, 4: 0, 3: 0, 2: 0, 1: 0 },
+    };
+    const aspectScores: AspectScore[] = [
+      { name: 'Scent Throw', key: 'scentThrow', average: 4.9, count: 4 },
+      { name: 'Burn Longevity', key: 'burnLongevity', average: 4.7, count: 4 },
+    ];
+
+    render(
+      <RatingSummary
+        distribution={distribution}
+        aspectScores={aspectScores}
+      />
+    );
+
+    expect(screen.getByText('Rated by Feature')).toBeDefined();
+    expect(screen.getByText('Scent Throw')).toBeDefined();
+    expect(screen.getByText('4.9')).toBeDefined();
+    expect(screen.getByText('Burn Longevity')).toBeDefined();
+    expect(screen.getByText('4.7')).toBeDefined();
   });
 });

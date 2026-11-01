@@ -6,6 +6,8 @@ import styles from './page.module.css';
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [totpCode, setTotpCode] = useState('');
+  const [require2FA, setRequire2FA] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const storefrontUrl = process.env.NEXT_PUBLIC_STOREFRONT_URL || 'http://localhost:3000';
@@ -16,16 +18,31 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
+      const payload: { email: string; password: string; totpCode?: string } = {
+        email,
+        password,
+      };
+
+      if (require2FA) {
+        payload.totpCode = totpCode;
+      }
+
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json().catch(() => null);
 
       if (!res.ok) {
         setError(data?.error || `Login failed (${res.status}). Please check credentials or server logs.`);
+        setLoading(false);
+        return;
+      }
+
+      if (data?.require2FA) {
+        setRequire2FA(true);
         setLoading(false);
         return;
       }
@@ -56,6 +73,7 @@ export default function AdminLoginPage() {
               id="admin-email"
               type="email"
               required
+              disabled={require2FA}
               className={styles.input}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -71,6 +89,7 @@ export default function AdminLoginPage() {
               id="admin-password"
               type="password"
               required
+              disabled={require2FA}
               className={styles.input}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -78,12 +97,35 @@ export default function AdminLoginPage() {
             />
           </div>
 
+          {require2FA && (
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="admin-totp">
+                Two-Factor Security Code
+              </label>
+              <input
+                id="admin-totp"
+                type="text"
+                required
+                maxLength={6}
+                autoFocus
+                className={styles.input}
+                value={totpCode}
+                onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ''))}
+                placeholder="123456"
+              />
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={loading}
             className={styles.submitBtn}
           >
-            {loading ? 'Authenticating...' : 'Sign In to Seller Portal'}
+            {loading
+              ? 'Authenticating...'
+              : require2FA
+              ? 'Verify Security Code'
+              : 'Sign In to Seller Portal'}
           </button>
         </form>
 

@@ -10,7 +10,7 @@ export async function POST(request: Request, context: RouteContext) {
   try {
     const { id } = await context.params;
     const body = await request.json();
-    const { reason = 'Defective or damaged item' } = body;
+    const { reason, returnStatus } = body;
 
     const session = await getSessionUser();
     const admin = await getAdminSessionUser();
@@ -31,19 +31,22 @@ export async function POST(request: Request, context: RouteContext) {
       return NextResponse.json({ error: 'Unauthorized to request return for this order' }, { status: 403 });
     }
 
-    if (order.status !== 'DELIVERED') {
+    if (!admin && order.status !== 'DELIVERED') {
       return NextResponse.json(
         { error: 'Return can only be requested for delivered orders' },
         { status: 400 }
       );
     }
 
+    const targetStatus = admin && returnStatus ? String(returnStatus) : 'REQUESTED';
+    const targetReason = reason ? String(reason).trim() : (order.returnReason || 'Defective or damaged item');
+
     const updated = await prisma.order.update({
       where: { id },
       data: {
-        returnStatus: 'REQUESTED',
-        returnReason: String(reason).trim(),
-        returnRequestedAt: new Date(),
+        returnStatus: targetStatus,
+        returnReason: targetReason,
+        returnRequestedAt: order.returnRequestedAt || new Date(),
       },
     });
 

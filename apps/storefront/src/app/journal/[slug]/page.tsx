@@ -35,7 +35,18 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       openGraph: {
         title: article.title,
         description: article.excerpt,
-        images: [{ url: article.coverImage }],
+        type: 'article',
+        url: `https://meadowmist.in/journal/${slug}`,
+        images: [{ url: article.coverImage, width: 1200, height: 630, alt: article.title }],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: `${article.title} | Meadow Mist Journal`,
+        description: article.excerpt,
+        images: [article.coverImage],
+      },
+      alternates: {
+        canonical: `https://meadowmist.in/journal/${slug}`,
       },
     };
   } catch {

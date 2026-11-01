@@ -9,7 +9,8 @@ import styles from './page.module.css';
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get('redirect') || '/account';
+  const rawRedirect = searchParams.get('redirect') || '/account';
+  const redirect = rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') ? rawRedirect : '/account';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -90,9 +91,14 @@ function LoginForm() {
           </div>
 
           <div className={styles.field}>
-            <label className={styles.label} htmlFor="password">
-              Password
-            </label>
+            <div className={styles.labelRow}>
+              <label className={styles.label} htmlFor="password">
+                Password
+              </label>
+              <Link href="/forgot-password" className={styles.forgotLink}>
+                Forgot password?
+              </Link>
+            </div>
             <input
               id="password"
               type="password"

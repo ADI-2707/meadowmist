@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -34,8 +35,8 @@ const NAV_SECTIONS = [
   {
     title: 'Help',
     links: [
+      { href: '/faq', label: 'Frequently Asked Questions' },
       { href: '/journal', label: 'Candle Care Guide' },
-      { href: '/journal', label: 'Gifting Guide' },
       { href: '/contact', label: 'Returns & Exchanges' },
     ],
   },
@@ -50,19 +51,24 @@ export default function Footer() {
   } = useForm<NewsletterForm>({ resolver: zodResolver(newsletterSchema) });
 
   const onSubmit = async (data: NewsletterForm) => {
-
-    await new Promise((r) => setTimeout(r, 800));
-    console.log('Newsletter signup:', data.email);
-    reset();
+    try {
+      const res = await fetch('/api/newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (res.ok) {
+        reset();
+      }
+    } catch {
+    }
   };
 
   return (
     <footer className={styles.footer}>
-      
       <div className={styles.topBorder} aria-hidden="true" />
 
       <div className={`container ${styles.inner}`}>
-        
         <div className={styles.brand}>
           <Link href="/" className={styles.footerLogoLink}>
             <Image
@@ -78,7 +84,6 @@ export default function Footer() {
             crafted in small batches with intention.
           </p>
 
-          
           <div className={styles.newsletter}>
             <p className={styles.newsletterLabel}>Stay in the loop</p>
             {isSubmitSuccessful ? (
@@ -109,7 +114,6 @@ export default function Footer() {
           </div>
         </div>
 
-        
         <div className={styles.navCols}>
           {NAV_SECTIONS.map((section) => (
             <nav key={section.title} aria-label={section.title}>
@@ -128,7 +132,6 @@ export default function Footer() {
         </div>
       </div>
 
-      
       <div className={styles.bottomBar}>
         <div className="container">
           <p className={styles.copyright}>

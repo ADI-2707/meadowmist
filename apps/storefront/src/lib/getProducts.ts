@@ -24,6 +24,19 @@ interface DbProductPayload {
   isFeatured: boolean;
   isActive: boolean;
   reviews?: Array<{ rating: number }>;
+  variants?: Array<{
+    id: string;
+    productId: string;
+    sku: string;
+    name: string;
+    optionValues: string;
+    price: number | null;
+    salePrice: number | null;
+    stockQuantity: number;
+    inStock: boolean;
+    createdAt?: Date;
+    updatedAt?: Date;
+  }>;
 }
 
 function formatDbProduct(p: DbProductPayload): Product {
@@ -58,7 +71,23 @@ function formatDbProduct(p: DbProductPayload): Product {
   const reviewList = p.reviews || [];
   const reviewCount = reviewList.length;
   const ratingSum = reviewList.reduce((acc, r) => acc + r.rating, 0);
-  const averageRating = reviewCount > 0 ? Number((ratingSum / reviewCount).toFixed(1)) : 5;
+  const averageRating = reviewCount > 0 ? Number((ratingSum / reviewCount).toFixed(1)) : 0;
+
+  const variants = p.variants
+    ? p.variants.map((v) => ({
+        id: v.id,
+        productId: v.productId,
+        sku: v.sku,
+        name: v.name,
+        optionValues: v.optionValues,
+        price: v.price,
+        salePrice: v.salePrice,
+        stockQuantity: v.stockQuantity,
+        inStock: v.inStock && v.stockQuantity > 0,
+        createdAt: v.createdAt ? v.createdAt.toISOString() : undefined,
+        updatedAt: v.updatedAt ? v.updatedAt.toISOString() : undefined,
+      }))
+    : undefined;
 
   return {
     id: p.id,
@@ -84,6 +113,7 @@ function formatDbProduct(p: DbProductPayload): Product {
     customOptions,
     averageRating,
     reviewCount,
+    variants,
   };
 }
 
@@ -101,6 +131,7 @@ export async function getProducts(category?: 'candle' | 'ceramic'): Promise<Prod
           where: { isApproved: true },
           select: { rating: true },
         },
+        variants: true,
       },
       orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }],
     });
@@ -121,6 +152,7 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
           where: { isApproved: true },
           select: { rating: true },
         },
+        variants: true,
       },
     });
     if (item && item.isActive) {
@@ -150,6 +182,7 @@ export async function getRelatedProducts(
           where: { isApproved: true },
           select: { rating: true },
         },
+        variants: true,
       },
       take: limit,
       orderBy: { isFeatured: 'desc' },
@@ -190,6 +223,7 @@ export async function getFeaturedProducts(
           where: { isApproved: true },
           select: { rating: true },
         },
+        variants: true,
       },
       take: limit,
       orderBy: [{ isFeatured: 'desc' }, { badge: 'desc' }],

@@ -1,0 +1,195 @@
+.toolbarContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 16px);
+  margin-top: var(--space-6, 24px);
+  margin-bottom: var(--space-6, 24px);
+  padding: var(--space-4, 16px);
+  background: var(--color-surface, #FDFBF7);
+  border: 1px solid var(--color-parchment-deep, #e6ded3);
+  border-radius: 10px;
+}
+
+.topControls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3, 12px);
+}
+
+.searchWrapper {
+  position: relative;
+  flex: 1;
+  min-width: 220px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: var(--color-ink-muted, #7A7265);
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  height: 40px;
+  padding: 0 36px 0 36px;
+  background: #fff;
+  border: 1px solid var(--color-parchment-deep, #e6ded3);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.875rem;
+  color: var(--color-ink, #2C2825);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.searchInput:focus {
+  border-color: var(--color-forest, #1b4332);
+  box-shadow: 0 0 0 2px rgba(27, 67, 50, 0.15);
+}
+
+.clearSearchBtn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--color-ink-muted, #7A7265);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.sortWrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sortLabel {
+  font-size: 0.85rem;
+  color: var(--color-ink-muted, #7A7265);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.sortSelect {
+  height: 40px;
+  padding: 0 32px 0 12px;
+  background-color: #fff;
+  border: 1px solid var(--color-parchment-deep, #e6ded3);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  color: var(--color-ink, #2C2825);
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%237A7265' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  transition: border-color 0.15s ease;
+}
+
+.sortSelect:focus {
+  border-color: var(--color-forest, #1b4332);
+}
+
+.chipsRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.chipBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #fff;
+  border: 1px solid var(--color-parchment-deep, #e6ded3);
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-ink-muted, #7A7265);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.chipBtn:hover {
+  border-color: var(--color-forest, #1b4332);
+  color: var(--color-forest, #1b4332);
+}
+
+.activeChip {
+  background: var(--color-forest, #1b4332);
+  border-color: var(--color-forest, #1b4332);
+  color: #fff;
+}
+
+.activeChip:hover {
+  background: #143527;
+  border-color: #143527;
+  color: #fff;
+}
+
+.chipIcon {
+  width: 14px;
+  height: 14px;
+}
+
+.clearAllBtn {
+  background: none;
+  border: none;
+  color: var(--color-forest, #1b4332);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 4px 8px;
+  margin-left: auto;
+}
+
+.summaryStatus {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--color-ink-muted, #7A7265);
+  border-top: 1px solid var(--color-parchment-deep, #e6ded3);
+  padding-top: 10px;
+  margin-top: 2px;
+}
+
+@media (max-width: 640px) {
+  .topControls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sortWrapper {
+    justify-content: space-between;
+  }
+
+  .sortSelect {
+    flex: 1;
+  }
+
+  .clearAllBtn {
+    margin-left: 0;
+    width: 100%;
+    text-align: left;
+    padding: 4px 0;
+  }
+}
+

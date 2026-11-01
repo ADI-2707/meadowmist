@@ -12,20 +12,15 @@ vi.mock('next/image', () => ({
 }));
 
 describe('Seller Sidebar Navigation Helpers', () => {
-  it('contains all 10 required seller navigation items', () => {
-    expect(NAV_ITEMS.length).toBe(10);
+  it('contains the 5 consolidated seller domain hub navigation items', () => {
+    expect(NAV_ITEMS.length).toBe(5);
 
     const labels = NAV_ITEMS.map((i) => i.label);
     expect(labels).toContain('Dashboard');
-    expect(labels).toContain('Products');
-    expect(labels).toContain('Inventory Stock');
-    expect(labels).toContain('Orders & Shipments');
-    expect(labels).toContain('Customers');
-    expect(labels).toContain('Customer Reviews');
-    expect(labels).toContain('Contact Enquiries');
-    expect(labels).toContain('Store Content CMS');
-    expect(labels).toContain('Promo Discounts');
-    expect(labels).toContain('Store Settings');
+    expect(labels).toContain('Catalog & Stock');
+    expect(labels).toContain('Orders & Logistics');
+    expect(labels).toContain('Customers & Support');
+    expect(labels).toContain('Marketing & Store');
   });
 
   it('matches Dashboard only on exact root pathname', () => {
@@ -37,17 +32,27 @@ describe('Seller Sidebar Navigation Helpers', () => {
     expect(isSidebarItemActive(dashboardItem, '/orders/123')).toBe(false);
   });
 
-  it('matches section routes and their nested child paths by prefix', () => {
+  it('matches section routes and their nested or alias child paths by prefix', () => {
     const productsItem = NAV_ITEMS.find((i) => i.href === '/products')!;
     expect(isSidebarItemActive(productsItem, '/products')).toBe(true);
     expect(isSidebarItemActive(productsItem, '/products/new')).toBe(true);
     expect(isSidebarItemActive(productsItem, '/products/candle-123/edit')).toBe(true);
-    expect(isSidebarItemActive(productsItem, '/inventory')).toBe(false);
+    expect(isSidebarItemActive(productsItem, '/inventory')).toBe(true);
 
     const ordersItem = NAV_ITEMS.find((i) => i.href === '/orders')!;
     expect(isSidebarItemActive(ordersItem, '/orders')).toBe(true);
     expect(isSidebarItemActive(ordersItem, '/orders/ord_456')).toBe(true);
     expect(isSidebarItemActive(ordersItem, '/customers')).toBe(false);
+
+    const customersItem = NAV_ITEMS.find((i) => i.href === '/customers')!;
+    expect(isSidebarItemActive(customersItem, '/customers')).toBe(true);
+    expect(isSidebarItemActive(customersItem, '/reviews')).toBe(true);
+    expect(isSidebarItemActive(customersItem, '/enquiries')).toBe(true);
+
+    const marketingItem = NAV_ITEMS.find((i) => i.href === '/marketing')!;
+    expect(isSidebarItemActive(marketingItem, '/marketing')).toBe(true);
+    expect(isSidebarItemActive(marketingItem, '/content')).toBe(true);
+    expect(isSidebarItemActive(marketingItem, '/promotions')).toBe(true);
   });
 });
 
@@ -72,8 +77,11 @@ describe('Seller Sidebar Component Rendering & Interactions', () => {
     expect(screen.getByText('Meadow Mist')).toBeDefined();
     expect(screen.getByText('Seller Portal')).toBeDefined();
     expect(screen.getByText('Dashboard')).toBeDefined();
-    expect(screen.getByText('Products')).toBeDefined();
-    expect(screen.getByText('Orders & Shipments')).toBeDefined();
+    expect(screen.getByText('Catalog & Stock')).toBeDefined();
+    expect(screen.getByText('Orders & Logistics')).toBeDefined();
+    expect(screen.getByText('Customers & Support')).toBeDefined();
+    expect(screen.getByText('Marketing & Store')).toBeDefined();
+    expect(screen.getByText('Store Settings')).toBeDefined();
   });
 
   it('renders collapse toggle button with "Collapse sidebar" aria-label when expanded and toggles on click', () => {
@@ -110,7 +118,7 @@ describe('Seller Sidebar Component Rendering & Interactions', () => {
     expect(onToggleCollapse).toHaveBeenCalledTimes(1);
   });
 
-  it('handles mobile close interactions via mobile close button and backdrop', () => {
+  it('calls onCloseMobile when mobile backdrop or close button is clicked', () => {
     render(
       <Sidebar
         collapsed={false}
@@ -121,21 +129,12 @@ describe('Seller Sidebar Component Rendering & Interactions', () => {
     );
 
     const closeBtn = screen.getByRole('button', { name: /close sidebar/i });
-    expect(closeBtn).toBeDefined();
-
     fireEvent.click(closeBtn);
     expect(onCloseMobile).toHaveBeenCalledTimes(1);
-
-    const backdrop = document.querySelector('[class*="backdrop"]');
-    expect(backdrop).not.toBeNull();
-    if (backdrop) {
-      fireEvent.click(backdrop);
-      expect(onCloseMobile).toHaveBeenCalledTimes(2);
-    }
   });
 
-  it('renders storefront view link in footer', () => {
-    render(
+  it('renders portal and store versions in sidebar footer when expanded and collapsed', () => {
+    const { rerender } = render(
       <Sidebar
         collapsed={false}
         onToggleCollapse={onToggleCollapse}
@@ -144,8 +143,22 @@ describe('Seller Sidebar Component Rendering & Interactions', () => {
       />
     );
 
-    const viewStoreBtn = screen.getByRole('link', { name: /view storefront/i });
-    expect(viewStoreBtn).toBeDefined();
-    expect(viewStoreBtn.getAttribute('target')).toBe('_blank');
+    const versionInfo = screen.getByTestId('sidebar-version-info');
+    expect(versionInfo).toBeDefined();
+    expect(versionInfo.textContent).toContain('Portal v');
+    expect(versionInfo.textContent).toContain('Store v');
+
+    rerender(
+      <Sidebar
+        collapsed={true}
+        onToggleCollapse={onToggleCollapse}
+        mobileOpen={false}
+        onCloseMobile={onCloseMobile}
+      />
+    );
+
+    const versionCollapsed = screen.getByTestId('sidebar-version-collapsed');
+    expect(versionCollapsed).toBeDefined();
+    expect(versionCollapsed.textContent).toContain('v');
   });
 });

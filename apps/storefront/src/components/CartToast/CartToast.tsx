@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { useCartStore, ToastInfo } from '@/store/cartStore';
@@ -28,7 +28,6 @@ export default function CartToast() {
 
     return () => clearTimeout(timer);
   }, [toast, clearToast]);
-
 
   useEffect(() => {
     if (prevIsDrawerOpen.current && !isDrawerOpen) {

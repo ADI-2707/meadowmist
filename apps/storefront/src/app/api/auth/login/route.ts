@@ -2,11 +2,14 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { comparePassword } from '@/lib/password';
 import { signToken } from '@/lib/auth';
-import { setSessionCookie } from '@/lib/session';
+import { setSessionCookie, setTrustedDeviceCookie } from '@/lib/session';
 import {
   checkLoginAttempt,
   recordFailedAttempt,
   resetFailedAttempts,
+  verifyTurnstileToken,
+  generateDeviceToken,
+  calculateDeviceExpiry,
 } from '@meadowmist/shared';
 
 function getClientIp(request: Request): string {
@@ -20,7 +23,7 @@ function getClientIp(request: Request): string {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, password } = body;
+    const { email, password, turnstileToken } = body;
 
     if (!email || !password) {
       return NextResponse.json(
@@ -38,6 +41,7 @@ export async function POST(request: Request) {
         {
           error: `Account temporarily locked due to repeated failed login attempts. Please try again in ${check.remainingSeconds} seconds.`,
           remainingSeconds: check.remainingSeconds,
+          requireStepUp: check.requireStepUp,
         },
         {
           status: 429,
@@ -46,6 +50,19 @@ export async function POST(request: Request) {
           },
         }
       );
+    }
+
+    if (check.requireStepUp || turnstileToken) {
+      const turnstile = await verifyTurnstileToken(turnstileToken, ip);
+      if (!turnstile.success) {
+        return NextResponse.json(
+          {
+            error: 'Security verification failed. Please complete the captcha check.',
+            requireTurnstile: true,
+          },
+          { status: 400 }
+        );
+      }
     }
 
     const user = await prisma.user.findUnique({
@@ -59,6 +76,7 @@ export async function POST(request: Request) {
           {
             error: `Account temporarily locked due to repeated failed login attempts. Please try again in ${failure.remainingSeconds} seconds.`,
             remainingSeconds: failure.remainingSeconds,
+            requireStepUp: failure.requireStepUp,
           },
           {
             status: 429,
@@ -69,7 +87,10 @@ export async function POST(request: Request) {
         );
       }
       return NextResponse.json(
-        { error: 'Invalid email or password' },
+        {
+          error: 'Invalid email or password',
+          requireStepUp: failure.requireStepUp,
+        },
         { status: 401 }
       );
     }
@@ -82,6 +103,7 @@ export async function POST(request: Request) {
           {
             error: `Account temporarily locked due to repeated failed login attempts. Please try again in ${failure.remainingSeconds} seconds.`,
             remainingSeconds: failure.remainingSeconds,
+            requireStepUp: failure.requireStepUp,
           },
           {
             status: 429,
@@ -92,7 +114,10 @@ export async function POST(request: Request) {
         );
       }
       return NextResponse.json(
-        { error: 'Invalid email or password' },
+        {
+          error: 'Invalid email or password',
+          requireStepUp: failure.requireStepUp,
+        },
         { status: 401 }
       );
     }
@@ -107,6 +132,29 @@ export async function POST(request: Request) {
     });
 
     await setSessionCookie(token, false);
+
+    const { rawToken, tokenHash } = generateDeviceToken();
+    await setTrustedDeviceCookie(rawToken);
+
+    if (prisma.trustedDevice) {
+      try {
+        await prisma.trustedDevice.upsert({
+          where: { deviceHash: tokenHash },
+          update: {
+            lastUsedAt: new Date(),
+            lastIp: ip,
+            userAgent: request.headers.get('user-agent') || null,
+          },
+          create: {
+            userId: user.id,
+            deviceHash: tokenHash,
+            lastIp: ip,
+            userAgent: request.headers.get('user-agent') || null,
+            expiresAt: calculateDeviceExpiry(60),
+          },
+        });
+      } catch {}
+    }
 
     return NextResponse.json({
       user: {

@@ -1,217 +1,79 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { Search, Eye } from 'lucide-react';
+import React, { Suspense, useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { ShoppingBag, Truck, RotateCcw } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
-import { StockBadge, BadgeStatus } from '@/components/StockBadge/StockBadge';
-import { Pagination } from '@/components/Pagination/Pagination';
-import { useDebounce } from '@/hooks/useDebounce';
+import { TabNav, TabItem } from '@/components/TabNav/TabNav';
+import { ActiveOrdersTab } from './components/ActiveOrdersTab';
+import { LogisticsTab } from './components/LogisticsTab';
+import { ReturnsTab } from './components/ReturnsTab';
 import styles from './orders.module.css';
 
-interface OrderItem {
-  id: string;
-  orderNumber: string;
-  createdAt: string;
-  status: string;
-  totalAmount: number;
-  paymentMethod: string;
-  paymentStatus: string;
-  trackingNumber?: string | null;
-  returnStatus?: string | null;
-  items: { id: string; quantity: number }[];
-  user?: { name: string; email: string; phone?: string | null } | null;
-}
+function OrdersContent() {
+  const searchParams = useSearchParams();
+  const currentTab = searchParams.get('tab') || 'active';
+  const [counts, setCounts] = useState<{ active?: number; returns?: number }>({});
 
-export default function AdminOrdersPage() {
-  const [orders, setOrders] = useState<OrderItem[]>([]);
-  const [statusFilter, setStatusFilter] = useState('ALL');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
-  const [total, setTotal] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
-
-  const debouncedSearch = useDebounce(searchTerm, 350);
-
-  const fetchOrders = async (currentPage = page, currentLimit = limit) => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (statusFilter !== 'ALL') params.set('status', statusFilter);
-      if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim());
-      params.set('page', String(currentPage));
-      params.set('limit', String(currentLimit));
-
-      const res = await fetch(`/api/orders?${params.toString()}`);
-      if (res.ok) {
-        const data = await res.json();
-        setOrders(data.orders || []);
-        if (data.pagination) {
-          setTotal(data.pagination.total);
-          setTotalPages(data.pagination.totalPages);
+  useEffect(() => {
+    fetch('/api/analytics')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.summary) {
+          setCounts({
+            active:
+              (data.summary.pendingOrdersCount || 0) +
+              (data.summary.processingOrdersCount || 0),
+            returns: data.summary.returnRequestedCount || 0,
+          });
         }
-      }
-    } catch (err) {
-      console.error('Orders load error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+      })
+      .catch(() => {});
+  }, []);
 
-  useEffect(() => {
-    setPage(1);
-    fetchOrders(1, limit);
-  }, [statusFilter, debouncedSearch]);
-
-  useEffect(() => {
-    fetchOrders(page, limit);
-  }, [page, limit]);
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-  };
-
-  const mapStatusToBadge = (status: string): BadgeStatus => {
-    switch (status.toUpperCase()) {
-      case 'PENDING':
-        return 'pending';
-      case 'PROCESSING':
-      case 'CONFIRMED':
-        return 'confirmed';
-      case 'SHIPPED':
-        return 'shipped';
-      case 'DELIVERED':
-        return 'delivered';
-      case 'CANCELLED':
-        return 'cancelled';
-      default:
-        return 'pending';
-    }
-  };
+  const tabs: TabItem[] = [
+    {
+      id: 'active',
+      label: 'Active Orders',
+      icon: ShoppingBag,
+      count: counts.active && counts.active > 0 ? counts.active : undefined,
+    },
+    {
+      id: 'logistics',
+      label: 'Dispatched & Tracking',
+      icon: Truck,
+    },
+    {
+      id: 'returns',
+      label: 'Returns & Refunds',
+      icon: RotateCcw,
+      count: counts.returns && counts.returns > 0 ? counts.returns : undefined,
+    },
+  ];
 
   return (
     <div className={styles.container}>
       <PageHeader
-        title="Orders & Fulfillment"
-        eyebrow="Order Lifecycle"
-        subtitle="Process incoming orders, assign couriers, generate tracking numbers, and handle customer returns."
+        eyebrow="Order Lifecycle & Shipments"
+        title="Orders & Logistics"
+        subtitle="Process incoming orders, track courier dispatches, and manage customer returns."
       />
 
-      <div className={styles.filterBar}>
-        <form onSubmit={handleSearchSubmit} style={{ display: 'flex', flex: 1, gap: '8px' }}>
-          <input
-            type="text"
-            className={styles.searchInput}
-            placeholder="Search by Order #, customer name, or email..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <button type="submit" className={styles.viewBtn} style={{ padding: '8px 14px' }}>
-            <Search size={14} />
-          </button>
-        </form>
+      <TabNav tabs={tabs} activeTab={currentTab} />
 
-        <select
-          className={styles.filterSelect}
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-        >
-          <option value="ALL">All Order Statuses</option>
-          <option value="PENDING">Pending</option>
-          <option value="PROCESSING">Processing</option>
-          <option value="SHIPPED">Shipped</option>
-          <option value="DELIVERED">Delivered</option>
-          <option value="CANCELLED">Cancelled</option>
-        </select>
-      </div>
-
-      <div className={styles.tableCard}>
-        {loading ? (
-          <div style={{ padding: '32px', textAlign: 'center' }}>Loading orders...</div>
-        ) : orders.length === 0 ? (
-          <div style={{ padding: '40px', textAlign: 'center' }}>
-            No orders found matching the filter criteria.
-          </div>
-        ) : (
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Order #</th>
-                <th>Date</th>
-                <th>Customer</th>
-                <th>Items</th>
-                <th>Total</th>
-                <th>Payment</th>
-                <th>Status</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.map((o) => {
-                const totalQty = o.items.reduce((sum, item) => sum + item.quantity, 0);
-
-                return (
-                  <tr key={o.id}>
-                    <td>
-                      <Link href={`/orders/${o.id}`} className={styles.orderNum}>
-                        {o.orderNumber}
-                      </Link>
-                      {o.returnStatus === 'REQUESTED' && (
-                        <span style={{ display: 'block', color: '#c53030', fontSize: '0.7rem', fontWeight: 700 }}>
-                          Return Requested
-                        </span>
-                      )}
-                    </td>
-                    <td>
-                      {new Date(o.createdAt).toLocaleDateString('en-IN', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                      })}
-                    </td>
-                    <td>
-                      <p style={{ fontWeight: 600, color: 'var(--color-forest)' }}>
-                        {o.user?.name || 'Customer'}
-                      </p>
-                      <p style={{ fontSize: '0.75rem', opacity: 0.7 }}>{o.user?.email}</p>
-                    </td>
-                    <td>{totalQty} item{totalQty === 1 ? '' : 's'}</td>
-                    <td style={{ fontWeight: 700 }}>₹{o.totalAmount.toLocaleString('en-IN')}</td>
-                    <td>
-                      <span style={{ fontWeight: 600, fontSize: '0.75rem' }}>{o.paymentMethod}</span>
-                      <span style={{ display: 'block', fontSize: '0.7rem', opacity: 0.7 }}>
-                        {o.paymentStatus}
-                      </span>
-                    </td>
-                    <td>
-                      <StockBadge status={mapStatusToBadge(o.status)} label={o.status} />
-                    </td>
-                    <td>
-                      <Link href={`/orders/${o.id}`} className={styles.viewBtn}>
-                        <Eye size={12} style={{ display: 'inline', marginRight: '4px' }} />
-                        Manage
-                      </Link>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        )}
-        <Pagination
-          page={page}
-          totalPages={totalPages}
-          totalItems={total}
-          limit={limit}
-          onPageChange={setPage}
-          onLimitChange={(newLimit) => {
-            setLimit(newLimit);
-            setPage(1);
-          }}
-        />
+      <div role="tabpanel" id={`tabpanel-${currentTab}`} aria-labelledby={`tab-${currentTab}`}>
+        {currentTab === 'logistics' && <LogisticsTab />}
+        {currentTab === 'returns' && <ReturnsTab />}
+        {currentTab !== 'logistics' && currentTab !== 'returns' && <ActiveOrdersTab />}
       </div>
     </div>
+  );
+}
+
+export default function AdminOrdersPage() {
+  return (
+    <Suspense fallback={<div className={styles.container}>Loading orders...</div>}>
+      <OrdersContent />
+    </Suspense>
   );
 }
