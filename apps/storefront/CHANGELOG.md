@@ -1,5 +1,11 @@
 # @meadowmist/storefront
 
+## 0.3.0
+
+### Minor Changes
+
+- ce92ec8: Storefront artisanal catalog, verified reviews with damage photo evidence, and 7-day return flow
+
 ## 0.2.0
 
 ### Minor Changes
