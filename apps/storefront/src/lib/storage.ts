@@ -1,11 +1,16 @@
 import fs from 'fs/promises';
 import path from 'path';
 
-export async function saveUploadedFile(file: File): Promise<string> {
+export async function saveReviewPhoto(file: File): Promise<string> {
   const bytes = await file.arrayBuffer();
   const buffer = Buffer.from(bytes);
 
-  const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+  let publicDir = path.join(process.cwd(), 'public');
+  if (path.basename(process.cwd()) !== 'storefront') {
+    publicDir = path.join(process.cwd(), 'apps', 'storefront', 'public');
+  }
+  const uploadsDir = path.join(publicDir, 'uploads', 'reviews');
+
   try {
     await fs.access(uploadsDir);
   } catch {
@@ -18,5 +23,5 @@ export async function saveUploadedFile(file: File): Promise<string> {
 
   await fs.writeFile(filePath, buffer);
 
-  return `/uploads/${uniqueName}`;
+  return `/uploads/reviews/${uniqueName}`;
 }
