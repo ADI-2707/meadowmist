@@ -39,15 +39,25 @@ export interface Review {
   rating: number;
   title?: string | null;
   comment: string;
+  images?: string[];
+  helpfulCount?: number;
+  sellerReply?: string | null;
+  sellerRepliedAt?: string | null;
+  aspectRatings?: Record<string, number> | null;
+  userVotedHelpful?: boolean;
   isVerifiedPurchase: boolean;
   isApproved: boolean;
   createdAt: string;
   user?: {
     name: string;
+    email?: string;
   };
   product?: {
+    id?: string;
     name: string;
     slug: string;
+    images?: string;
+    category?: string;
   };
 }
 
@@ -55,6 +65,15 @@ export interface ReviewInput {
   rating: number;
   title?: string;
   comment: string;
+  images?: string[];
+  aspectRatings?: Record<string, number>;
+}
+
+export interface AspectScore {
+  name: string;
+  key: string;
+  average: number;
+  count: number;
 }
 
 export interface RatingDistribution {
@@ -67,6 +86,8 @@ export interface RatingDistribution {
     4: number;
     5: number;
   };
+  aspectScores?: AspectScore[];
+  photoCount?: number;
 }
 
 export interface JournalArticle {
