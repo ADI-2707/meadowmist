@@ -17,3 +17,4 @@ describe('PriceTag Component', () => {
     expect(screen.getByText('₹1,800')).toBeDefined();
   });
 });
+

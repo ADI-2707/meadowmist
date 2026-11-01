@@ -115,3 +115,4 @@ describe('Seller Support Enquiries API Routes', () => {
     expect(body.enquiry.status).toBe('RESOLVED');
   });
 });
+

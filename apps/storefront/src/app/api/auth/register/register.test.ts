@@ -89,3 +89,4 @@ describe('Storefront Customer Registration Route', () => {
     expect(setSessionCookie).toHaveBeenCalledWith('jwt_token_sample', false);
   });
 });
+

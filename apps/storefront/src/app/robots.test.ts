@@ -16,3 +16,4 @@ describe('Storefront Robots Configuration', () => {
     expect(config.sitemap).toBe('https://meadowmist.in/sitemap.xml');
   });
 });
+

@@ -172,3 +172,4 @@ describe('Seller Inventory API Route', () => {
     expect(body.variant.stockQuantity).toBe(8);
   });
 });
+

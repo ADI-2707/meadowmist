@@ -21,3 +21,4 @@ describe('Storefront Customer Logout Route', () => {
     expect(clearSessionCookie).toHaveBeenCalledWith(false);
   });
 });
+

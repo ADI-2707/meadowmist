@@ -58,3 +58,4 @@ describe('Storefront /api/auth/me Route', () => {
     expect(body.user._count.orders).toBe(3);
   });
 });
+

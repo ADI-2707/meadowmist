@@ -62,3 +62,4 @@ describe('Storefront Customer Orders History API Route', () => {
     expect(body.orders[0].items[0].product.slug).toBe('botanical-amber-soy-candle');
   });
 });
+

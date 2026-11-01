@@ -145,3 +145,4 @@ describe('Seller Products API Route', () => {
     expect(body.product.id).toBe('prod_99');
   });
 });
+

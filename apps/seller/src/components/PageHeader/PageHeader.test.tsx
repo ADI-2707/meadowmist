@@ -20,3 +20,4 @@ describe('PageHeader Component', () => {
     expect(screen.getByRole('button', { name: 'Add Product' })).toBeDefined();
   });
 });
+

@@ -48,3 +48,4 @@ describe('Storefront Sitemap Generator', () => {
     expect(entries.some((e) => e.url === 'https://meadowmist.in/')).toBe(true);
   });
 });
+

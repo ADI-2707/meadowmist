@@ -96,3 +96,4 @@ describe('AddToCartButton Component', () => {
     );
   });
 });
+

@@ -72,3 +72,4 @@ describe('Seller Inventory Movement Logs API Route', () => {
     expect(body.error).toBe('Failed to fetch inventory logs');
   });
 });
+

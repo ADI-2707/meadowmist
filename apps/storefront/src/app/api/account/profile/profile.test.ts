@@ -125,3 +125,4 @@ describe('Storefront Customer Profile API Route', () => {
     expect(body.user.name).toBe('Tara Sen');
   });
 });
+

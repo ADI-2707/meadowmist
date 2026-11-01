@@ -19,3 +19,4 @@ describe('Seller Admin Logout API Route', () => {
     expect(clearAdminSessionCookie).toHaveBeenCalled();
   });
 });
+

@@ -106,3 +106,4 @@ describe('Storefront Coupon Code Verification Route', () => {
     expect(body.discount).toBe(200);
   });
 });
+
