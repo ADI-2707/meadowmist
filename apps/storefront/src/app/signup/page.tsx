@@ -9,7 +9,8 @@ import styles from '../login/page.module.css';
 function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get('redirect') || '/account';
+  const rawRedirect = searchParams.get('redirect') || '/account';
+  const redirect = rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') ? rawRedirect : '/account';
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');

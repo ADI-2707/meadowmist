@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       message: 'If an account exists with this email, password reset instructions have been prepared',
-      resetToken: token || undefined,
+      resetToken: process.env.NODE_ENV !== 'production' ? (token || undefined) : undefined,
     });
   } catch (error) {
     console.error('Forgot password error:', error);
