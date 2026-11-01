@@ -4,9 +4,17 @@ interface AttemptRecord {
   lastAttemptAt: number;
 }
 
+export interface RateLimitResult {
+  allowed: boolean;
+  requireStepUp: boolean;
+  remainingSeconds: number;
+  attemptCount: number;
+  targetAttemptCount: number;
+}
+
 const store = new Map<string, AttemptRecord>();
 
-function getLockDurationSeconds(failureCount: number): number {
+function getIpLockDurationSeconds(failureCount: number): number {
   if (failureCount < 5) return 0;
   if (failureCount === 5) return 30;
   if (failureCount === 6) return 60;
@@ -15,67 +23,104 @@ function getLockDurationSeconds(failureCount: number): number {
   return 3600;
 }
 
-function makeKey(ip: string, email: string): string {
+function makeIpKey(ip: string): string {
   const safeIp = ip.trim().toLowerCase() || 'unknown-ip';
-  const safeEmail = email.trim().toLowerCase() || 'unknown-email';
-  return `${safeIp}:${safeEmail}`;
+  return `ip:${safeIp}`;
 }
 
-export function checkLoginAttempt(
-  ip: string,
-  email: string
-): { allowed: boolean; remainingSeconds: number; attemptCount: number } {
-  const key = makeKey(ip, email);
+function makeTargetKey(email: string): string {
+  const safeEmail = email.trim().toLowerCase() || 'unknown-target';
+  return `target:${safeEmail}`;
+}
+
+export function checkLoginAttempt(ip: string, email: string): RateLimitResult {
   const now = Date.now();
-  const record = store.get(key);
+  const ipKey = makeIpKey(ip);
+  const targetKey = makeTargetKey(email);
 
-  if (!record) {
-    return { allowed: true, remainingSeconds: 0, attemptCount: 0 };
-  }
+  const ipRecord = store.get(ipKey);
+  const targetRecord = store.get(targetKey);
 
-  if (record.lockedUntil > now) {
-    const remainingSeconds = Math.ceil((record.lockedUntil - now) / 1000);
+  const ipAttempts = ipRecord?.count || 0;
+  const targetAttempts = targetRecord?.count || 0;
+
+  if (ipRecord && ipRecord.lockedUntil > now) {
+    const remainingSeconds = Math.ceil((ipRecord.lockedUntil - now) / 1000);
     return {
       allowed: false,
+      requireStepUp: true,
       remainingSeconds,
-      attemptCount: record.count,
+      attemptCount: ipAttempts,
+      targetAttemptCount: targetAttempts,
     };
   }
 
+  if (targetRecord && targetRecord.lockedUntil > now) {
+    const remainingSeconds = Math.ceil((targetRecord.lockedUntil - now) / 1000);
+    return {
+      allowed: false,
+      requireStepUp: true,
+      remainingSeconds,
+      attemptCount: ipAttempts,
+      targetAttemptCount: targetAttempts,
+    };
+  }
+
+  const requireStepUp = targetAttempts >= 6 || ipAttempts >= 3;
+
   return {
     allowed: true,
+    requireStepUp,
     remainingSeconds: 0,
-    attemptCount: record.count,
+    attemptCount: ipAttempts,
+    targetAttemptCount: targetAttempts,
   };
 }
 
-export function recordFailedAttempt(
-  ip: string,
-  email: string
-): { allowed: boolean; remainingSeconds: number; attemptCount: number } {
-  const key = makeKey(ip, email);
+export function recordFailedAttempt(ip: string, email: string): RateLimitResult {
   const now = Date.now();
-  const current = store.get(key);
-  const nextCount = (current?.count || 0) + 1;
-  const lockDuration = getLockDurationSeconds(nextCount);
-  const lockedUntil = lockDuration > 0 ? now + lockDuration * 1000 : 0;
+  const ipKey = makeIpKey(ip);
+  const targetKey = makeTargetKey(email);
 
-  store.set(key, {
-    count: nextCount,
-    lockedUntil,
+  const ipRecord = store.get(ipKey);
+  const targetRecord = store.get(targetKey);
+
+  const nextIpCount = (ipRecord?.count || 0) + 1;
+  const ipLockDuration = getIpLockDurationSeconds(nextIpCount);
+  const ipLockedUntil = ipLockDuration > 0 ? now + ipLockDuration * 1000 : 0;
+
+  store.set(ipKey, {
+    count: nextIpCount,
+    lockedUntil: ipLockedUntil,
     lastAttemptAt: now,
   });
 
+  const nextTargetCount = (targetRecord?.count || 0) + 1;
+  const targetLockDuration = nextTargetCount >= 15 ? 300 : 0;
+  const targetLockedUntil = targetLockDuration > 0 ? now + targetLockDuration * 1000 : 0;
+
+  store.set(targetKey, {
+    count: nextTargetCount,
+    lockedUntil: targetLockedUntil,
+    lastAttemptAt: now,
+  });
+
+  const isAllowed = ipLockDuration === 0 && targetLockDuration === 0;
+  const remainingSeconds = Math.max(ipLockDuration, targetLockDuration);
+  const requireStepUp = nextTargetCount >= 6 || nextIpCount >= 3;
+
   return {
-    allowed: lockDuration === 0,
-    remainingSeconds: lockDuration,
-    attemptCount: nextCount,
+    allowed: isAllowed,
+    requireStepUp,
+    remainingSeconds,
+    attemptCount: nextIpCount,
+    targetAttemptCount: nextTargetCount,
   };
 }
 
 export function resetFailedAttempts(ip: string, email: string): void {
-  const key = makeKey(ip, email);
-  store.delete(key);
+  store.delete(makeIpKey(ip));
+  store.delete(makeTargetKey(email));
 }
 
 export function _clearRateLimitStore(): void {

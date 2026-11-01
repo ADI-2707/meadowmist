@@ -38,6 +38,7 @@ export async function POST(request: Request) {
         {
           error: `Account temporarily locked due to repeated failed login attempts. Please try again in ${check.remainingSeconds} seconds.`,
           remainingSeconds: check.remainingSeconds,
+          requireStepUp: check.requireStepUp,
         },
         {
           status: 429,
@@ -59,6 +60,7 @@ export async function POST(request: Request) {
           {
             error: `Account temporarily locked due to repeated failed login attempts. Please try again in ${failure.remainingSeconds} seconds.`,
             remainingSeconds: failure.remainingSeconds,
+            requireStepUp: failure.requireStepUp,
           },
           {
             status: 429,
@@ -69,7 +71,10 @@ export async function POST(request: Request) {
         );
       }
       return NextResponse.json(
-        { error: 'Invalid seller credentials or unauthorized access' },
+        {
+          error: 'Invalid seller credentials or unauthorized access',
+          requireStepUp: failure.requireStepUp,
+        },
         { status: 401 }
       );
     }
@@ -82,6 +87,7 @@ export async function POST(request: Request) {
           {
             error: `Account temporarily locked due to repeated failed login attempts. Please try again in ${failure.remainingSeconds} seconds.`,
             remainingSeconds: failure.remainingSeconds,
+            requireStepUp: failure.requireStepUp,
           },
           {
             status: 429,
@@ -92,7 +98,10 @@ export async function POST(request: Request) {
         );
       }
       return NextResponse.json(
-        { error: 'Invalid seller credentials or unauthorized access' },
+        {
+          error: 'Invalid seller credentials or unauthorized access',
+          requireStepUp: failure.requireStepUp,
+        },
         { status: 401 }
       );
     }

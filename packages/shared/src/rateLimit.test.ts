@@ -27,7 +27,7 @@ describe('Incremental Account Lockout Engine', () => {
     }
   });
 
-  it('locks for 30 seconds on 5th failure', () => {
+  it('locks for 30 seconds on 5th failure from same IP', () => {
     for (let i = 1; i <= 4; i++) {
       recordFailedAttempt(ip, email);
     }
@@ -87,13 +87,54 @@ describe('Incremental Account Lockout Engine', () => {
     expect(check.remainingSeconds).toBe(0);
   });
 
-  it('tracks distinct IP and email pairs independently', () => {
+  it('detects distributed bot attacks across multiple distinct IPs targeting same email', () => {
+    const targetEmail = 'victim@example.com';
+
     for (let i = 1; i <= 5; i++) {
-      recordFailedAttempt('1.1.1.1', 'user@example.com');
+      const res = recordFailedAttempt(`10.0.0.${i}`, targetEmail);
+      expect(res.allowed).toBe(true);
+      expect(res.requireStepUp).toBe(false);
+      expect(res.targetAttemptCount).toBe(i);
     }
 
-    expect(checkLoginAttempt('1.1.1.1', 'user@example.com').allowed).toBe(false);
-    expect(checkLoginAttempt('2.2.2.2', 'user@example.com').allowed).toBe(true);
-    expect(checkLoginAttempt('1.1.1.1', 'other@example.com').allowed).toBe(true);
+    const sixth = recordFailedAttempt('10.0.0.6', targetEmail);
+    expect(sixth.allowed).toBe(true);
+    expect(sixth.requireStepUp).toBe(true);
+    expect(sixth.targetAttemptCount).toBe(6);
+
+    const check = checkLoginAttempt('10.0.0.99', targetEmail);
+    expect(check.allowed).toBe(true);
+    expect(check.requireStepUp).toBe(true);
+  });
+
+  it('locks IP across different email targets after 5 failures to stop spraying', () => {
+    const attackerIp = '203.0.113.42';
+
+    for (let i = 1; i <= 4; i++) {
+      recordFailedAttempt(attackerIp, `user${i}@example.com`);
+    }
+
+    const fifth = recordFailedAttempt(attackerIp, 'user5@example.com');
+    expect(fifth.allowed).toBe(false);
+    expect(fifth.remainingSeconds).toBe(30);
+
+    const checkDifferentTarget = checkLoginAttempt(attackerIp, 'another_victim@example.com');
+    expect(checkDifferentTarget.allowed).toBe(false);
+  });
+
+  it('enforces safety cap on target email after 15 distributed failures', () => {
+    const targetEmail = 'admin@meadowmist.in';
+
+    for (let i = 1; i <= 14; i++) {
+      recordFailedAttempt(`198.51.100.${i}`, targetEmail);
+    }
+
+    const fifteenth = recordFailedAttempt('198.51.100.15', targetEmail);
+    expect(fifteenth.allowed).toBe(false);
+    expect(fifteenth.remainingSeconds).toBe(300);
+
+    const checkNewIp = checkLoginAttempt('198.51.100.99', targetEmail);
+    expect(checkNewIp.allowed).toBe(false);
+    expect(checkNewIp.remainingSeconds).toBeGreaterThan(0);
   });
 });
