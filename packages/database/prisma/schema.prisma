@@ -166,6 +166,7 @@ model Order {
   cancellationReason String?
   cancelledAt        DateTime?
   returnReason       String?
+  returnImages       String?
   returnRequestedAt  DateTime?
   returnStatus       String      @default("NONE")
   trackingNumber     String?
