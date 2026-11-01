@@ -6,6 +6,20 @@ export interface CustomOptions {
   allowGiftMessage?: boolean;
 }
 
+export interface ProductVariant {
+  id: string;
+  productId: string;
+  sku: string;
+  name: string;
+  optionValues: string | Record<string, string>;
+  price?: number | null;
+  salePrice?: number | null;
+  stockQuantity: number;
+  inStock: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface Product {
   id: string;
   slug: string;
@@ -30,6 +44,7 @@ export interface Product {
   customOptions?: CustomOptions | null;
   averageRating?: number;
   reviewCount?: number;
+  variants?: ProductVariant[];
 }
 
 export interface Review {
@@ -103,4 +118,85 @@ export interface JournalArticle {
   publishedAt: string;
   tags?: string[];
   relatedProductSlugs?: string[];
+}
+
+export interface RestockNotification {
+  id: string;
+  productId: string;
+  variantId?: string | null;
+  email: string;
+  notified: boolean;
+  createdAt: string;
+}
+
+export interface RestockNotificationInput {
+  productId: string;
+  variantId?: string | null;
+  email: string;
+}
+
+export interface PasswordResetRequestInput {
+  email: string;
+}
+
+export interface PasswordResetConfirmInput {
+  token: string;
+  newPassword: string;
+}
+
+export interface CatalogExportItem {
+  id: string;
+  sku?: string;
+  slug: string;
+  name: string;
+  category: string;
+  subCategory?: string;
+  price: number;
+  salePrice?: number | null;
+  stockQuantity: number;
+  inStock: boolean;
+  materials?: string;
+  dimensions?: string | null;
+  scentFamily?: string | null;
+  scentNotes?: string | null;
+  colorFamily?: string;
+}
+
+export interface OrderItem {
+  id: string;
+  orderId: string;
+  productId: string;
+  variantId?: string | null;
+  variant?: ProductVariant | null;
+  productName: string;
+  productImage: string;
+  unitPrice: number;
+  quantity: number;
+  selectedFragrance?: string | null;
+  selectedColor?: string | null;
+  selectedSize?: string | null;
+  customNotes?: string | null;
+  lineTotal: number;
+}
+
+export interface Order {
+  id: string;
+  orderNumber: string;
+  userId?: string | null;
+  isGuest?: boolean;
+  guestEmail?: string | null;
+  guestPhone?: string | null;
+  status: string;
+  subtotal: number;
+  shippingCharges: number;
+  discountAmount: number;
+  totalAmount: number;
+  promoCode?: string | null;
+  paymentStatus: string;
+  paymentMethod: string;
+  paymentRef?: string | null;
+  shippingAddress: string;
+  customerNotes?: string | null;
+  createdAt: string;
+  items: OrderItem[];
 }
