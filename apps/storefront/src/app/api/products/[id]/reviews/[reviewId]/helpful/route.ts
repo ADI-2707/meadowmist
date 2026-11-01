@@ -72,3 +72,4 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ error: 'Failed to record helpful vote' }, { status: 500 });
   }
 }
+

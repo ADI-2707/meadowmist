@@ -72,3 +72,4 @@ export async function DELETE(request: Request, context: RouteContext) {
     return NextResponse.json({ error: 'Failed to delete artisan reply' }, { status: 500 });
   }
 }
+
