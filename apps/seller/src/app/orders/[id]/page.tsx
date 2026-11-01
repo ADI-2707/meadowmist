@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useState, useEffect } from 'react';
+import React, { use, useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowLeft, Truck, CheckCircle2, AlertCircle, Printer } from 'lucide-react';
@@ -31,8 +31,11 @@ interface OrderDetail {
   refundedAmount: number;
   refundReason?: string | null;
   cancellationReason?: string | null;
+  cancelledAt?: string | null;
   returnReason?: string | null;
   returnStatus?: string | null;
+  returnRequestedAt?: string | null;
+  returnImages?: string | null;
   trackingNumber?: string | null;
   courierPartner?: string | null;
   courierStatus?: string | null;
@@ -137,8 +140,8 @@ export default function AdminOrderDetailPage({ params }: Props) {
 
   const handleUpdateReturnStatus = async (status: string) => {
     try {
-      const res = await fetch(`/api/orders/${id}/return`, {
-        method: 'POST',
+      const res = await fetch(`/api/orders/${id}`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ returnStatus: status }),
       });
@@ -187,6 +190,18 @@ export default function AdminOrderDetailPage({ params }: Props) {
     address = {};
   }
 
+  let parsedReturnImages: string[] = [];
+  if (order.returnImages) {
+    try {
+      const parsed = JSON.parse(order.returnImages);
+      if (Array.isArray(parsed)) {
+        parsedReturnImages = parsed;
+      }
+    } catch {
+      parsedReturnImages = [];
+    }
+  }
+
   return (
     <div className={styles.container}>
       <PageHeader
@@ -218,6 +233,44 @@ export default function AdminOrderDetailPage({ params }: Props) {
           </div>
         }
       />
+
+      {order.status === 'CANCELLED' && (
+        <div
+          data-testid="cancellation-banner"
+          style={{
+            marginBottom: '20px',
+            padding: '16px 20px',
+            backgroundColor: '#fff5f5',
+            border: '1px solid #feb2b2',
+            borderLeft: '4px solid #e53e3e',
+            borderRadius: '6px',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '12px',
+          }}
+        >
+          <AlertCircle size={22} style={{ color: '#e53e3e', flexShrink: 0, marginTop: '2px' }} />
+          <div>
+            <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600, color: '#9b2c2c' }}>
+              Order Cancelled
+            </h3>
+            <p style={{ margin: '4px 0 0', fontSize: '0.88rem', color: '#742a2a' }}>
+              <strong>Cancellation Reason:</strong> {order.cancellationReason || 'No reason specified by customer'}
+            </p>
+            {order.cancelledAt && (
+              <p style={{ margin: '4px 0 0', fontSize: '0.78rem', color: '#718096' }}>
+                Cancelled on {new Date(order.cancelledAt).toLocaleString('en-IN', {
+                  day: 'numeric',
+                  month: 'short',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className={styles.detailGrid}>
         <div>
@@ -380,7 +433,7 @@ export default function AdminOrderDetailPage({ params }: Props) {
             </button>
           </div>
 
-          {(order.returnReason || order.refundedAmount > 0) && (
+          {(order.returnReason || parsedReturnImages.length > 0 || order.refundedAmount > 0) && (
             <div className={styles.card} style={{ marginTop: '20px', borderLeft: '4px solid #c53030' }}>
               <h2 className={styles.cardTitle} style={{ color: '#c53030' }}>Return & Refund Center</h2>
               {order.returnReason && (
@@ -407,6 +460,55 @@ export default function AdminOrderDetailPage({ params }: Props) {
                       </button>
                     </div>
                   )}
+                </div>
+              )}
+
+              {parsedReturnImages.length > 0 && (
+                <div
+                  data-testid="damage-photo-gallery"
+                  style={{
+                    margin: '14px 0',
+                    padding: '12px',
+                    backgroundColor: '#fffaf0',
+                    border: '1px solid #feebc8',
+                    borderRadius: '6px',
+                  }}
+                >
+                  <p style={{ fontWeight: 600, fontSize: '0.85rem', color: '#7b341e', margin: '0 0 8px' }}>
+                    Customer Damage & Breakage Photo Evidence:
+                  </p>
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    {parsedReturnImages.map((imgUrl, idx) => (
+                      <a
+                        key={idx}
+                        href={imgUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          position: 'relative',
+                          width: '84px',
+                          height: '84px',
+                          borderRadius: '6px',
+                          overflow: 'hidden',
+                          border: '2px solid #dd6b20',
+                          display: 'block',
+                          backgroundColor: '#f7fafc',
+                        }}
+                        title="Click to view full image in new tab"
+                      >
+                        <Image
+                          src={imgUrl}
+                          alt={`Transit damage evidence ${idx + 1}`}
+                          fill
+                          sizes="84px"
+                          style={{ objectFit: 'cover' }}
+                        />
+                      </a>
+                    ))}
+                  </div>
+                  <p style={{ fontSize: '0.74rem', color: '#9c4221', margin: '6px 0 0', fontStyle: 'italic' }}>
+                    Click thumbnail to view full-resolution photo evidence.
+                  </p>
                 </div>
               )}
 
