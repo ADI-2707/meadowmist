@@ -310,3 +310,141 @@
   align-items: center;
   justify-content: center;
 }
+
+.artisanReplyCard {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: var(--color-canvas);
+  border-left: 3px solid var(--color-forest);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: 0.8rem;
+}
+
+.artisanReplyHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.artisanReplyTitle {
+  font-weight: 600;
+  color: var(--color-forest);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.artisanReplyText {
+  color: var(--color-ink);
+  margin: 0 0 6px 0;
+  line-height: 1.4;
+}
+
+.replyActionBtn {
+  background: none;
+  border: none;
+  color: var(--color-forest);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.replyActionBtn:hover {
+  color: var(--color-gold);
+}
+
+.deleteReplyBtn {
+  background: none;
+  border: none;
+  color: #C62828;
+  font-size: 0.75rem;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+  margin-left: 8px;
+}
+
+.replyInlineEditor {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.replyInlineTextarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-gold-soft);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+.replyInlineActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cancelReplyBtn {
+  background: none;
+  border: 1px solid var(--color-gold-soft);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  cursor: pointer;
+  color: var(--color-ink);
+}
+
+.customerPhotosStrip {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.customerPhotoBtn {
+  width: 44px;
+  height: 44px;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--color-gold-soft);
+  padding: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.aspectsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.aspectBadge {
+  font-size: 0.7rem;
+  background: var(--color-canvas);
+  border: 1px solid var(--color-gold-soft);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--color-forest);
+  font-weight: 500;
+}
+
+.helpfulBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: #555;
+  background: #f5f5f5;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-top: 4px;
+}
