@@ -41,6 +41,7 @@ describe('Storefront getProducts Database-Driven Service', () => {
     isFeatured: true,
     isActive: true,
     reviews: [{ rating: 5 }],
+    variants: [],
   };
 
   const reviewInclude = {
@@ -48,6 +49,7 @@ describe('Storefront getProducts Database-Driven Service', () => {
       where: { isApproved: true },
       select: { rating: true },
     },
+    variants: true,
   };
 
   beforeEach(() => {
