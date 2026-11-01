@@ -1,7 +1,17 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { signToken, verifyToken, TokenPayload } from './auth';
 
 describe('Shared Auth Module', () => {
+  const originalEnv = process.env;
+
+  beforeEach(() => {
+    process.env = { ...originalEnv };
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
+  });
+
   const mockPayload: TokenPayload = {
     userId: 'user_123',
     email: 'artisan@meadowmist.com',
@@ -50,5 +60,24 @@ describe('Shared Auth Module', () => {
 
     const verified = await verifyToken(tamperedToken);
     expect(verified).toBeNull();
+  });
+
+  it('throws an error in production environment when JWT_SECRET is missing', async () => {
+    process.env.NODE_ENV = 'production';
+    delete process.env.JWT_SECRET;
+
+    await expect(signToken(mockPayload)).rejects.toThrow(
+      'FATAL: JWT_SECRET environment variable is required in production'
+    );
+  });
+
+  it('succeeds in production environment when JWT_SECRET is explicitly configured', async () => {
+    process.env.NODE_ENV = 'production';
+    process.env.JWT_SECRET = 'ultra-secure-test-key-for-production-verification-12345';
+
+    const token = await signToken(mockPayload);
+    expect(typeof token).toBe('string');
+    const verified = await verifyToken(token);
+    expect(verified?.userId).toBe(mockPayload.userId);
   });
 });
