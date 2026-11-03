@@ -81,6 +81,20 @@ export default function ReviewForm({
       return;
     }
 
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
+    for (const file of Array.from(files)) {
+      if (!validTypes.includes(file.type)) {
+        setError('Invalid file format. Please upload JPG, PNG, or WebP.');
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setError(`Photo "${file.name}" exceeds 5MB limit (${(file.size / (1024 * 1024)).toFixed(1)}MB).`);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+      }
+    }
+
     setUploadingPhotos(true);
     setError(null);
 
@@ -229,11 +243,16 @@ export default function ReviewForm({
       </div>
 
       <div className={styles.photoUploadSection}>
-        <span className={styles.label}>Customer Photos (Max 3)</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '8px' }}>
+          <span className={styles.label}>Customer Photos (Max 3)</span>
+          <span style={{ fontSize: '0.75rem', color: '#666' }}>
+            Supports JPG, PNG, WebP &bull; Max 5MB each
+          </span>
+        </div>
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp"
+          accept="image/jpeg,image/png,image/webp,image/avif"
           multiple
           className={styles.hiddenFileInput}
           onChange={handleFileSelect}
