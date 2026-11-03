@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Mail, Phone, Clock, AlertCircle } from 'lucide-react';
+import { toast } from '@meadowmist/shared';
 import styles from '../customers.module.css';
 
 interface EnquiryItem {
@@ -66,12 +67,12 @@ export function SupportInboxTab() {
         }),
       });
       if (res.ok) {
-        alert('Enquiry updated successfully');
+        toast.success('Enquiry updated successfully');
         fetchEnquiries();
         setSelectedEnquiry(null);
       }
     } catch {
-      alert('Error updating enquiry');
+      toast.error('Error updating enquiry');
     }
   };
 

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Tag, Plus, Trash2 } from 'lucide-react';
+import { toast } from '@meadowmist/shared';
 import styles from '../marketing.module.css';
 
 interface PromotionItem {
@@ -48,7 +49,7 @@ export function PromotionsTab() {
   const handleCreatePromo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCode || !discountValue) {
-      alert('Code and discount value required');
+      toast.error('Code and discount value required');
       return;
     }
 
@@ -72,10 +73,10 @@ export function PromotionsTab() {
         fetchPromos();
       } else {
         const d = await res.json();
-        alert(d.error || 'Failed to create promo');
+        toast.error(d.error || 'Failed to create promo');
       }
     } catch {
-      alert('Error creating promotion');
+      toast.error('Error creating promotion');
     }
   };
 
@@ -88,10 +89,10 @@ export function PromotionsTab() {
       if (res.ok) {
         fetchPromos();
       } else {
-        alert('Failed to delete promotion');
+        toast.error('Failed to delete promotion');
       }
     } catch {
-      alert('Error deleting promotion');
+      toast.error('Error deleting promotion');
     }
   };
 

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
+import { toast } from '@meadowmist/shared';
 import styles from '../marketing.module.css';
 
 interface FAQItem {
@@ -41,7 +42,7 @@ export function FaqsTab() {
   const handleAddFaq = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newFaq.question || !newFaq.answer) {
-      alert('Question and answer are required');
+      toast.error('Question and answer are required');
       return;
     }
 
@@ -60,10 +61,10 @@ export function FaqsTab() {
         });
         fetchFaqs();
       } else {
-        alert('Failed to add FAQ');
+        toast.error('Failed to add FAQ');
       }
     } catch {
-      alert('Error saving FAQ');
+      toast.error('Error saving FAQ');
     }
   };
 
@@ -73,7 +74,7 @@ export function FaqsTab() {
       const res = await fetch(`/api/content/faqs?id=${id}`, { method: 'DELETE' });
       if (res.ok) fetchFaqs();
     } catch {
-      alert('Error deleting FAQ');
+      toast.error('Error deleting FAQ');
     }
   };
 

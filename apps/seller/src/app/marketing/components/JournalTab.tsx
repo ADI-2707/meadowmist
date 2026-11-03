@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
+import { toast } from '@meadowmist/shared';
 import styles from '../marketing.module.css';
 
 interface JournalCMSItem {
@@ -47,7 +48,7 @@ export function JournalTab() {
   const handleCreateArticle = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newArticle.title || !newArticle.content) {
-      alert('Title and content are required');
+      toast.error('Title and content are required');
       return;
     }
 
@@ -72,10 +73,10 @@ export function JournalTab() {
         });
         fetchArticles();
       } else {
-        alert('Failed to publish article');
+        toast.error('Failed to publish article');
       }
     } catch {
-      alert('Error creating article');
+      toast.error('Error creating article');
     }
   };
 
@@ -87,7 +88,7 @@ export function JournalTab() {
       });
       if (res.ok) fetchArticles();
     } catch {
-      alert('Error deleting article');
+      toast.error('Error deleting article');
     }
   };
 

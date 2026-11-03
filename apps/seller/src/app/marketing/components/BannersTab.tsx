@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Plus, Trash2 } from 'lucide-react';
+import { toast } from '@meadowmist/shared';
 import styles from '../marketing.module.css';
 
 interface BannerItem {
@@ -51,13 +52,13 @@ export function BannersTab() {
 
     const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
     if (!validTypes.includes(file.type)) {
-      alert('Invalid format. Please upload JPG, PNG, WebP, or AVIF.');
+      toast.error('Invalid format. Please upload JPG, PNG, WebP, or AVIF.');
       if (e.target) e.target.value = '';
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      alert(`File is too large (${(file.size / (1024 * 1024)).toFixed(1)}MB). Maximum allowed size is 5MB.`);
+      toast.error(`File is too large (${(file.size / (1024 * 1024)).toFixed(1)}MB). Maximum allowed size is 5MB.`);
       if (e.target) e.target.value = '';
       return;
     }
@@ -75,10 +76,10 @@ export function BannersTab() {
       if (res.ok && data.url) {
         setNewBanner((prev) => ({ ...prev, imageUrl: data.url }));
       } else {
-        alert(data.error || 'Failed to upload banner photo');
+        toast.error(data.error || 'Failed to upload banner photo');
       }
     } catch {
-      alert('Error uploading banner');
+      toast.error('Error uploading banner');
     } finally {
       setUploadingBanner(false);
       if (e.target) e.target.value = '';
@@ -88,7 +89,7 @@ export function BannersTab() {
   const handleAddBanner = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newBanner.title || !newBanner.imageUrl) {
-      alert('Banner title and image are required');
+      toast.error('Banner title and image are required');
       return;
     }
 
@@ -109,10 +110,10 @@ export function BannersTab() {
         });
         fetchBanners();
       } else {
-        alert('Failed to save banner');
+        toast.error('Failed to save banner');
       }
     } catch {
-      alert('Error adding banner');
+      toast.error('Error adding banner');
     }
   };
 
@@ -122,7 +123,7 @@ export function BannersTab() {
       const res = await fetch(`/api/content/banners?id=${id}`, { method: 'DELETE' });
       if (res.ok) fetchBanners();
     } catch {
-      alert('Error deleting banner');
+      toast.error('Error deleting banner');
     }
   };
 
