@@ -16,3 +16,4 @@ export * from './components/Skeleton/Skeleton';
 export * from './components/KeepAlive/KeepAlive';
 export * from './components/PostHogProvider/PostHogProvider';
 export * from './components/Button/Button';
+export * from './components/Modal/Modal';
