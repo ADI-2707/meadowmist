@@ -130,4 +130,49 @@ describe('ReviewForm Component', () => {
       })
     );
   });
+
+  it('rejects photo exceeding 5MB limit before making network request', async () => {
+    const fetchSpy = vi.spyOn(global, 'fetch');
+    const { container } = render(
+      <ReviewForm
+        productId="amber-candle-123"
+        category="Candles"
+        isLoggedIn={true}
+        onReviewSubmitted={onReviewSubmitted}
+      />
+    );
+
+    const fileInput = container.querySelector('#review-photo-input') as HTMLInputElement;
+    const largeFile = new File(['a'.repeat(100)], 'large-photo.jpg', {
+      type: 'image/jpeg',
+    });
+    Object.defineProperty(largeFile, 'size', { value: 6 * 1024 * 1024 });
+
+    fireEvent.change(fileInput, { target: { files: [largeFile] } });
+
+    expect(await screen.findByText(/exceeds 5MB limit/i)).toBeDefined();
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('rejects photo with invalid file format before making network request', async () => {
+    const fetchSpy = vi.spyOn(global, 'fetch');
+    const { container } = render(
+      <ReviewForm
+        productId="amber-candle-123"
+        category="Candles"
+        isLoggedIn={true}
+        onReviewSubmitted={onReviewSubmitted}
+      />
+    );
+
+    const fileInput = container.querySelector('#review-photo-input') as HTMLInputElement;
+    const invalidFile = new File(['content'], 'document.pdf', {
+      type: 'application/pdf',
+    });
+
+    fireEvent.change(fileInput, { target: { files: [invalidFile] } });
+
+    expect(await screen.findByText(/invalid file format/i)).toBeDefined();
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
 });
