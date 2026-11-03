@@ -31,3 +31,4 @@ describe('Skeleton Primitive Component', () => {
     expect(circContainer.firstElementChild).not.toBeNull();
   });
 });
+
