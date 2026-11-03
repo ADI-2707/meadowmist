@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatCurrency } from '@meadowmist/shared';
 import styles from './PriceTag.module.css';
 
 interface Props {
@@ -12,9 +13,9 @@ export default function PriceTag({ price, salePrice }: Props) {
 
   return (
     <div className={styles.priceTag}>
-      <span className={styles.current}>₹{display.toLocaleString('en-IN')}</span>
+      <span className={styles.current}>{formatCurrency(display)}</span>
       {hasSale && (
-        <span className={styles.original}>₹{price.toLocaleString('en-IN')}</span>
+        <span className={styles.original}>{formatCurrency(price)}</span>
       )}
     </div>
   );
