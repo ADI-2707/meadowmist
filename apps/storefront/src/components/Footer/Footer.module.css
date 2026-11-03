@@ -205,6 +205,10 @@
 
 
 @media (max-width: 768px) {
+  .footer {
+    padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom, 0px) + var(--space-4));
+  }
+
   .inner {
     grid-template-columns: 1fr;
     gap: var(--space-6);
