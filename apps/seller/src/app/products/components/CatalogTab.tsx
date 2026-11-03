@@ -8,7 +8,7 @@ import { StockBadge, BadgeStatus } from '@/components/StockBadge/StockBadge';
 import { Pagination } from '@/components/Pagination/Pagination';
 import { TableRowSkeleton } from '@/components/TableRowSkeleton/TableRowSkeleton';
 import { useDebounce } from '@/hooks/useDebounce';
-import { toast } from '@meadowmist/shared';
+import { toast, formatINR } from '@meadowmist/shared';
 import styles from '../products.module.css';
 
 interface ProductItem {
@@ -324,15 +324,15 @@ export function CatalogTab() {
                         {p.salePrice ? (
                           <div>
                             <span className={styles.salePrice}>
-                              ₹{p.salePrice.toLocaleString('en-IN')}
+                              {formatINR(p.salePrice)}
                             </span>
                             <span className={styles.origPrice}>
-                              ₹{p.price.toLocaleString('en-IN')}
+                              {formatINR(p.price)}
                             </span>
                           </div>
                         ) : (
                           <span className={styles.regularPrice}>
-                            ₹{p.price.toLocaleString('en-IN')}
+                            {formatINR(p.price)}
                           </span>
                         )}
                       </td>

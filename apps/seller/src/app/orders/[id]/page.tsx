@@ -351,7 +351,7 @@ export default function AdminOrderDetailPage({ params }: Props) {
                 <div className={styles.itemInfo}>
                   <p className={styles.itemName}>{item.productName}</p>
                   <p className={styles.itemMeta}>
-                    Qty: {item.quantity} · Unit Price: ₹{item.unitPrice.toLocaleString('en-IN')}
+                    Qty: {item.quantity} · Unit Price: {formatINR(item.unitPrice)}
                   </p>
                   {item.selectedFragrance && (
                     <p className={styles.itemMeta}>Scent: {item.selectedFragrance}</p>
@@ -669,7 +669,7 @@ export default function AdminOrderDetailPage({ params }: Props) {
                   {[item.selectedFragrance, item.selectedColor, item.selectedSize].filter(Boolean).join(' · ') || 'Standard'}
                 </td>
                 <td style={{ textAlign: 'center', fontWeight: 600 }}>{item.quantity}</td>
-                <td style={{ textAlign: 'right' }}>₹{item.lineTotal.toLocaleString('en-IN')}</td>
+                <td style={{ textAlign: 'right' }}>{formatINR(item.lineTotal)}</td>
               </tr>
             ))}
           </tbody>

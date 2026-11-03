@@ -6,6 +6,7 @@ import { RotateCcw, Eye, Search } from 'lucide-react';
 import { StockBadge } from '@/components/StockBadge/StockBadge';
 import { Pagination } from '@/components/Pagination/Pagination';
 import { useDebounce } from '@/hooks/useDebounce';
+import { formatINR } from '@meadowmist/shared';
 import styles from '../orders.module.css';
 
 interface OrderItem {
@@ -141,12 +142,12 @@ export function ReturnsTab() {
                     </p>
                   </td>
                   <td style={{ fontWeight: 600 }}>
-                    ₹{o.totalAmount.toLocaleString('en-IN')}
+                    {formatINR(o.totalAmount)}
                   </td>
                   <td>
                     {o.refundedAmount && o.refundedAmount > 0 ? (
                       <span style={{ color: '#2E7D32', fontWeight: 600 }}>
-                        ₹{o.refundedAmount.toLocaleString('en-IN')}
+                        {formatINR(o.refundedAmount)}
                       </span>
                     ) : (
                       <span style={{ color: '#aaa' }}>₹0</span>
