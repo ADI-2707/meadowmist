@@ -16,7 +16,8 @@
     "./posthog": {
       "types": "./src/posthog.ts",
       "default": "./src/posthog.ts"
-    }
+    },
+    "./tokens.css": "./src/tokens.css"
   },
   "scripts": {
     "build": "echo shared ready"
