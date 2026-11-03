@@ -26,6 +26,15 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async rewrites() {
+    const storefrontUrl = process.env.NEXT_PUBLIC_STOREFRONT_URL || 'http://localhost:3000';
+    return [
+      {
+        source: '/images/products/:path*',
+        destination: `${storefrontUrl}/images/products/:path*`,
+      },
+    ];
+  },
   async headers() {
     return [
       {
