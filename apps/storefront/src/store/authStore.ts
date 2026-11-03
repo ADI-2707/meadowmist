@@ -45,7 +45,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (onSuccess) {
         onSuccess();
       } else if (typeof window !== 'undefined' && window.location.pathname !== '/') {
-        window.location.href = '/';
+        window.location.assign(window.location.origin + '/');
       }
     }
   },

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import ModalResultSkeleton from './ModalResultSkeleton';
@@ -33,14 +33,14 @@ export default function ProductSearchModal({ isOpen, onClose }: ProductSearchMod
   const inputRef = useRef<HTMLInputElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
     setQuery('');
     setResults([]);
     onClose();
-  };
+  }, [onClose]);
 
   useEffect(() => {
     if (isOpen) {
@@ -78,7 +78,7 @@ export default function ProductSearchModal({ isOpen, onClose }: ProductSearchMod
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, handleClose]);
 
   useEffect(() => {
     if (!query.trim()) {

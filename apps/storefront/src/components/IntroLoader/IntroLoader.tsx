@@ -16,14 +16,14 @@ export default function IntroLoader() {
       return;
     }
 
-    setShow(true);
-    document.body.style.overflow = 'hidden';
-
+    const timerStart = setTimeout(() => {
+      setShow(true);
+      document.body.style.overflow = 'hidden';
+    }, 0);
 
     const timer1 = setTimeout(() => {
       setStage('zoom');
     }, 1600);
-
 
     const timer2 = setTimeout(() => {
       setStage('done');
@@ -33,6 +33,7 @@ export default function IntroLoader() {
     }, 2800);
 
     return () => {
+      clearTimeout(timerStart);
       clearTimeout(timer1);
       clearTimeout(timer2);
       document.body.style.overflow = '';
