@@ -1,1 +1,3 @@
-export { PostHogProvider, default } from '@meadowmist/shared';
+import { PostHogProvider } from '@meadowmist/shared';
+export { PostHogProvider };
+export default PostHogProvider;

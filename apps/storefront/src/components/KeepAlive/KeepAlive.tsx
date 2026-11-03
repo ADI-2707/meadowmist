@@ -1,1 +1,3 @@
-export { KeepAlive, default } from '@meadowmist/shared';
+import { KeepAlive } from '@meadowmist/shared';
+export { KeepAlive };
+export default KeepAlive;
