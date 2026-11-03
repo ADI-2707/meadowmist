@@ -1,9 +1,33 @@
 import { NextResponse } from 'next/server';
+import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { CourierTrackingUpdate } from '@/lib/shipping/types';
 
+function isValidSecret(provided: string | null, expected: string): boolean {
+  if (!provided) return false;
+  const providedBuffer = Buffer.from(provided);
+  const expectedBuffer = Buffer.from(expected);
+  if (providedBuffer.length !== expectedBuffer.length) {
+    return false;
+  }
+  return crypto.timingSafeEqual(providedBuffer, expectedBuffer);
+}
+
 export async function POST(request: Request) {
   try {
+    const configuredSecret = process.env.SHIPPING_WEBHOOK_SECRET;
+    if (configuredSecret) {
+      const incomingSecret =
+        request.headers.get('x-webhook-secret') ||
+        request.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
+
+      if (!isValidSecret(incomingSecret || null, configuredSecret)) {
+        return NextResponse.json({ error: 'Unauthorized webhook call' }, { status: 401 });
+      }
+    } else if (process.env.NODE_ENV === 'production') {
+      return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 });
+    }
+
     const body: CourierTrackingUpdate = await request.json();
     const { trackingNumber, courierStatus, delivered } = body;
 
