@@ -2,6 +2,8 @@ export function formatCurrency(amount: number): string {
   return `₹${Math.round(amount).toLocaleString('en-IN')}`;
 }
 
+export const formatINR = formatCurrency;
+
 export function formatDate(
   date: string | Date,
   options: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' }

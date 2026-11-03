@@ -3,8 +3,47 @@
 import { useState, useEffect } from 'react';
 import { Save } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
-import { toast } from '@meadowmist/shared';
+import { toast, Skeleton } from '@meadowmist/shared';
 import styles from './settings.module.css';
+
+function SettingsSkeleton() {
+  return (
+    <div className={styles.container}>
+      <div style={{ marginBottom: 'var(--space-6)' }}>
+        <Skeleton width="140px" height="24px" style={{ marginBottom: '8px' }} />
+        <Skeleton width="280px" height="16px" />
+      </div>
+
+      <div className={styles.formCard}>
+        <div className={styles.formSection}>
+          <Skeleton width="180px" height="22px" style={{ marginBottom: '16px' }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div>
+              <Skeleton width="120px" height="14px" style={{ marginBottom: '6px' }} />
+              <Skeleton width="100%" height="42px" borderRadius="var(--radius-sm)" />
+            </div>
+            <div>
+              <Skeleton width="160px" height="14px" style={{ marginBottom: '6px' }} />
+              <Skeleton width="100%" height="42px" borderRadius="var(--radius-sm)" />
+            </div>
+          </div>
+        </div>
+
+        <div className={styles.formSection}>
+          <Skeleton width="180px" height="22px" style={{ marginBottom: '16px' }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div>
+              <Skeleton width="140px" height="14px" style={{ marginBottom: '6px' }} />
+              <Skeleton width="100%" height="42px" borderRadius="var(--radius-sm)" />
+            </div>
+          </div>
+        </div>
+
+        <Skeleton width="140px" height="42px" borderRadius="var(--radius-sm)" style={{ marginTop: '16px' }} />
+      </div>
+    </div>
+  );
+}
 
 export default function AdminSettingsPage() {
   const [storeName, setStoreName] = useState('Meadow Mist');
@@ -85,7 +124,7 @@ export default function AdminSettingsPage() {
   };
 
   if (loading) {
-    return <div className={styles.container}>Loading store settings...</div>;
+    return <SettingsSkeleton />;
   }
 
   return (

@@ -6,8 +6,74 @@ import Image from 'next/image';
 import { ArrowLeft, Truck, CheckCircle2, AlertCircle, Printer } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { StockBadge } from '@/components/StockBadge/StockBadge';
-import { toast } from '@meadowmist/shared';
+import { toast, Skeleton, formatINR } from '@meadowmist/shared';
 import styles from '../orders.module.css';
+
+function OrderDetailSkeleton() {
+  return (
+    <div className={styles.container}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)', flexWrap: 'wrap', gap: 'var(--space-4)' }}>
+        <div>
+          <Skeleton width="140px" height="24px" style={{ marginBottom: '8px' }} />
+          <Skeleton width="260px" height="16px" />
+        </div>
+        <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+          <Skeleton width="110px" height="38px" borderRadius="var(--radius-sm)" />
+          <Skeleton width="110px" height="38px" borderRadius="var(--radius-sm)" />
+        </div>
+      </div>
+
+      <div className={styles.detailGrid}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+          <div className={styles.card}>
+            <Skeleton width="160px" height="22px" style={{ marginBottom: '16px' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                  <Skeleton width="50px" height="50px" borderRadius="var(--radius-sm)" />
+                  <div style={{ flex: 1 }}>
+                    <Skeleton width="60%" height="16px" style={{ marginBottom: '6px' }} />
+                    <Skeleton width="40%" height="12px" />
+                  </div>
+                  <Skeleton width="70px" height="16px" />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className={styles.card}>
+            <Skeleton width="180px" height="22px" style={{ marginBottom: '16px' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <Skeleton width="100%" height="18px" />
+              <Skeleton width="80%" height="18px" />
+              <Skeleton width="60%" height="18px" />
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+          <div className={styles.card}>
+            <Skeleton width="150px" height="22px" style={{ marginBottom: '16px' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <Skeleton width="100%" height="38px" borderRadius="var(--radius-sm)" />
+              <Skeleton width="100%" height="38px" borderRadius="var(--radius-sm)" />
+              <Skeleton width="100%" height="40px" borderRadius="var(--radius-sm)" />
+            </div>
+          </div>
+
+          <div className={styles.card}>
+            <Skeleton width="150px" height="22px" style={{ marginBottom: '16px' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <Skeleton width="100%" height="16px" />
+              <Skeleton width="100%" height="16px" />
+              <Skeleton width="100%" height="16px" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -181,7 +247,7 @@ export default function AdminOrderDetailPage({ params }: Props) {
   };
 
   if (loading || !order) {
-    return <div>Loading order details...</div>;
+    return <OrderDetailSkeleton />;
   }
 
   let address: Record<string, string> = {};
@@ -299,23 +365,23 @@ export default function AdminOrderDetailPage({ params }: Props) {
                     </p>
                   )}
                 </div>
-                <p className={styles.itemPrice}>₹{item.lineTotal.toLocaleString('en-IN')}</p>
+                <p className={styles.itemPrice}>{formatINR(item.lineTotal)}</p>
               </div>
             ))}
 
             <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--color-canvas-alt)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
                 <span>Subtotal</span>
-                <span>₹{order.subtotal.toLocaleString('en-IN')}</span>
+                <span>{formatINR(order.subtotal)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
                 <span>Shipping Charges</span>
-                <span>{order.shippingCharges === 0 ? 'FREE' : `₹${order.shippingCharges}`}</span>
+                <span>{order.shippingCharges === 0 ? 'FREE' : formatINR(order.shippingCharges)}</span>
               </div>
               {order.discountAmount > 0 && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', color: '#2f855a' }}>
                   <span>Discount ({order.promoCode || 'PROMO'})</span>
-                  <span>−₹{order.discountAmount.toLocaleString('en-IN')}</span>
+                  <span>−{formatINR(order.discountAmount)}</span>
                 </div>
               )}
               <div
@@ -331,7 +397,7 @@ export default function AdminOrderDetailPage({ params }: Props) {
                 }}
               >
                 <span>Total Amount</span>
-                <span>₹{order.totalAmount.toLocaleString('en-IN')}</span>
+                <span>{formatINR(order.totalAmount)}</span>
               </div>
             </div>
           </div>
