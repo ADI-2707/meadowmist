@@ -49,6 +49,19 @@ export function BannersTab() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
+    if (!validTypes.includes(file.type)) {
+      alert('Invalid format. Please upload JPG, PNG, WebP, or AVIF.');
+      if (e.target) e.target.value = '';
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert(`File is too large (${(file.size / (1024 * 1024)).toFixed(1)}MB). Maximum allowed size is 5MB.`);
+      if (e.target) e.target.value = '';
+      return;
+    }
+
     setUploadingBanner(true);
     const formData = new FormData();
     formData.append('file', file);
@@ -68,6 +81,7 @@ export function BannersTab() {
       alert('Error uploading banner');
     } finally {
       setUploadingBanner(false);
+      if (e.target) e.target.value = '';
     }
   };
 
@@ -224,9 +238,12 @@ export function BannersTab() {
 
           <div className={styles.field}>
             <label className={styles.label}>Banner Image</label>
+            <span style={{ display: 'block', fontSize: '0.75rem', color: '#666', marginBottom: '6px' }}>
+              Recommended: 1920 &times; 600px &bull; JPG, PNG, WebP up to 5MB
+            </span>
             <input
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp,image/avif"
               onChange={handleBannerUpload}
               className={styles.input}
             />
