@@ -13,3 +13,5 @@ export * from './logger';
 export * from './formatters';
 export * from './hooks';
 export * from './components/Skeleton/Skeleton';
+export * from './components/KeepAlive/KeepAlive';
+export * from './components/PostHogProvider/PostHogProvider';
