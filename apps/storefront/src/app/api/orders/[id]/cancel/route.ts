@@ -32,7 +32,6 @@ export async function POST(request: Request, context: RouteContext) {
       return NextResponse.json({ error: 'Unauthorized to cancel this order' }, { status: 403 });
     }
 
-    // Strict rule: Order can only be cancelled before shipping confirmation
     if (order.trackingNumber || order.status === 'SHIPPED' || order.status === 'DELIVERED') {
       return NextResponse.json(
         { error: 'Cannot cancel an order after shipping has been confirmed. You can request a return after delivery.' },
@@ -72,6 +71,33 @@ export async function POST(request: Request, context: RouteContext) {
               note: `Order ${order.orderNumber} cancelled: ${reason}`,
             },
           });
+        }
+
+        if (item.variantId) {
+          const variant = await tx.productVariant.findUnique({
+            where: { id: item.variantId },
+          });
+
+          if (variant) {
+            const restoredVariantStock = variant.stockQuantity + item.quantity;
+            await tx.productVariant.update({
+              where: { id: variant.id },
+              data: {
+                stockQuantity: restoredVariantStock,
+                inStock: true,
+              },
+            });
+
+            await tx.inventoryLog.create({
+              data: {
+                productId: variant.productId,
+                changeQuantity: item.quantity,
+                newQuantity: restoredVariantStock,
+                reason: 'ORDER_CANCELLED',
+                note: `Order ${order.orderNumber} cancelled: ${reason} (Variant: ${variant.sku})`,
+              },
+            });
+          }
         }
       }
 
