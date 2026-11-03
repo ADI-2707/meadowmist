@@ -61,8 +61,70 @@ export default async function ProductPage({ params }: Props) {
 
   const related = await getRelatedProducts(product.slug, product.category, 3);
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    image: product.images,
+    description: product.story,
+    category: product.category,
+    brand: {
+      '@type': 'Brand',
+      name: 'Meadow Mist',
+    },
+    offers: {
+      '@type': 'Offer',
+      priceCurrency: 'INR',
+      price: product.salePrice ?? product.price,
+      availability: product.inStock ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      url: `https://meadowmist.in/product/${product.slug}`,
+    },
+    ...(product.averageRating && product.reviewCount
+      ? {
+          aggregateRating: {
+            '@type': 'AggregateRating',
+            ratingValue: product.averageRating,
+            reviewCount: product.reviewCount,
+          },
+        }
+      : {}),
+  };
+
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: 'https://meadowmist.in',
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: product.category === 'candle' ? 'Candles' : 'Ceramics',
+        item: `https://meadowmist.in/${product.category === 'candle' ? 'candles' : 'ceramics'}`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: product.name,
+        item: `https://meadowmist.in/product/${product.slug}`,
+      },
+    ],
+  };
+
   return (
     <div className={styles.page}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
       <div className="container">
         <div className={styles.productGrid}>
           <div className={styles.gallery}>
