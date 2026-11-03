@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
-import { CourierTrackingUpdate } from '@/lib/shipping/types';
+import { CourierTrackingUpdate } from '@meadowmist/shared';
 
 function isValidSecret(provided: string | null, expected: string): boolean {
   if (!provided) return false;
