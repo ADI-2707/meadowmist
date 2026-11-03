@@ -1,4 +1,4 @@
-interface AttemptRecord {
+export interface AttemptRecord {
   count: number;
   lockedUntil: number;
   lastAttemptAt: number;
@@ -12,7 +12,85 @@ export interface RateLimitResult {
   targetAttemptCount: number;
 }
 
-const store = new Map<string, AttemptRecord>();
+export interface RateLimitStore {
+  get(key: string): AttemptRecord | undefined;
+  set(key: string, record: AttemptRecord): void;
+  delete(key: string): void;
+  clear(): void;
+}
+
+export class MemoryRateLimitStore implements RateLimitStore {
+  private map = new Map<string, AttemptRecord>();
+
+  get(key: string): AttemptRecord | undefined {
+    return this.map.get(key);
+  }
+
+  set(key: string, record: AttemptRecord): void {
+    this.map.set(key, record);
+  }
+
+  delete(key: string): void {
+    this.map.delete(key);
+  }
+
+  clear(): void {
+    this.map.clear();
+  }
+}
+
+export class UpstashRedisRateLimitStore {
+  private url: string;
+  private token: string;
+
+  constructor(url: string, token: string) {
+    this.url = url.replace(/\/$/, '');
+    this.token = token;
+  }
+
+  async get(key: string): Promise<AttemptRecord | undefined> {
+    try {
+      const res = await fetch(`${this.url}/get/${encodeURIComponent(key)}`, {
+        headers: { Authorization: `Bearer ${this.token}` },
+      });
+      if (!res.ok) return undefined;
+      const data = await res.json();
+      if (!data.result) return undefined;
+      return typeof data.result === 'string' ? JSON.parse(data.result) : data.result;
+    } catch {
+      return undefined;
+    }
+  }
+
+  async set(key: string, record: AttemptRecord, ttlSeconds: number = 3600): Promise<void> {
+    try {
+      await fetch(
+        `${this.url}/set/${encodeURIComponent(key)}/${encodeURIComponent(JSON.stringify(record))}?ex=${ttlSeconds}`,
+        {
+          headers: { Authorization: `Bearer ${this.token}` },
+        }
+      );
+    } catch {}
+  }
+
+  async delete(key: string): Promise<void> {
+    try {
+      await fetch(`${this.url}/del/${encodeURIComponent(key)}`, {
+        headers: { Authorization: `Bearer ${this.token}` },
+      });
+    } catch {}
+  }
+}
+
+let store: RateLimitStore = new MemoryRateLimitStore();
+
+export function getRateLimitStore(): RateLimitStore {
+  return store;
+}
+
+export function setRateLimitStore(newStore: RateLimitStore): void {
+  store = newStore;
+}
 
 function getIpLockDurationSeconds(failureCount: number): number {
   if (failureCount < 5) return 0;
@@ -23,12 +101,12 @@ function getIpLockDurationSeconds(failureCount: number): number {
   return 3600;
 }
 
-function makeIpKey(ip: string): string {
+export function makeIpKey(ip: string): string {
   const safeIp = ip.trim().toLowerCase() || 'unknown-ip';
   return `ip:${safeIp}`;
 }
 
-function makeTargetKey(email: string): string {
+export function makeTargetKey(email: string): string {
   const safeEmail = email.trim().toLowerCase() || 'unknown-target';
   return `target:${safeEmail}`;
 }
@@ -115,6 +193,58 @@ export function recordFailedAttempt(ip: string, email: string): RateLimitResult 
     remainingSeconds,
     attemptCount: nextIpCount,
     targetAttemptCount: nextTargetCount,
+  };
+}
+
+export async function checkLoginAttemptDistributed(
+  ip: string,
+  email: string,
+  redisClient?: UpstashRedisRateLimitStore
+): Promise<RateLimitResult> {
+  if (!redisClient) {
+    return checkLoginAttempt(ip, email);
+  }
+
+  const now = Date.now();
+  const ipKey = makeIpKey(ip);
+  const targetKey = makeTargetKey(email);
+
+  const [ipRecord, targetRecord] = await Promise.all([
+    redisClient.get(ipKey),
+    redisClient.get(targetKey),
+  ]);
+
+  const ipAttempts = ipRecord?.count || 0;
+  const targetAttempts = targetRecord?.count || 0;
+
+  if (ipRecord && ipRecord.lockedUntil > now) {
+    const remainingSeconds = Math.ceil((ipRecord.lockedUntil - now) / 1000);
+    return {
+      allowed: false,
+      requireStepUp: true,
+      remainingSeconds,
+      attemptCount: ipAttempts,
+      targetAttemptCount: targetAttempts,
+    };
+  }
+
+  if (targetRecord && targetRecord.lockedUntil > now) {
+    const remainingSeconds = Math.ceil((targetRecord.lockedUntil - now) / 1000);
+    return {
+      allowed: false,
+      requireStepUp: true,
+      remainingSeconds,
+      attemptCount: ipAttempts,
+      targetAttemptCount: targetAttempts,
+    };
+  }
+
+  return {
+    allowed: true,
+    requireStepUp: targetAttempts >= 6 || ipAttempts >= 3,
+    remainingSeconds: 0,
+    attemptCount: ipAttempts,
+    targetAttemptCount: targetAttempts,
   };
 }
 

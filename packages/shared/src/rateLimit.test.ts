@@ -1,14 +1,20 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   checkLoginAttempt,
   recordFailedAttempt,
   resetFailedAttempts,
   _clearRateLimitStore,
+  MemoryRateLimitStore,
+  setRateLimitStore,
+  UpstashRedisRateLimitStore,
+  checkLoginAttemptDistributed,
 } from './rateLimit';
 
 describe('Incremental Account Lockout Engine', () => {
   beforeEach(() => {
+    setRateLimitStore(new MemoryRateLimitStore());
     _clearRateLimitStore();
+    vi.restoreAllMocks();
   });
 
   const ip = '192.168.1.50';
@@ -136,5 +142,22 @@ describe('Incremental Account Lockout Engine', () => {
     const checkNewIp = checkLoginAttempt('198.51.100.99', targetEmail);
     expect(checkNewIp.allowed).toBe(false);
     expect(checkNewIp.remainingSeconds).toBeGreaterThan(0);
+  });
+
+  it('interacts with UpstashRedisRateLimitStore using mocked fetch', async () => {
+    const redis = new UpstashRedisRateLimitStore('https://example-upstash.io', 'test_token');
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        result: JSON.stringify({ count: 5, lockedUntil: Date.now() + 25000, lastAttemptAt: Date.now() }),
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const distributedCheck = await checkLoginAttemptDistributed('1.2.3.4', 'test@meadowmist.in', redis);
+    expect(distributedCheck.allowed).toBe(false);
+    expect(distributedCheck.remainingSeconds).toBeGreaterThan(0);
+    expect(fetchMock).toHaveBeenCalled();
   });
 });
