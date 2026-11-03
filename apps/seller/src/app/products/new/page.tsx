@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Upload, ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
+import { toast } from '@meadowmist/shared';
 import styles from '../products.module.css';
 
 export default function NewProductPage() {
@@ -42,13 +43,13 @@ export default function NewProductPage() {
 
     const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
     if (!validTypes.includes(file.type)) {
-      alert('Invalid format. Please upload JPG, PNG, WebP, or AVIF.');
+      toast.error('Invalid format. Please upload JPG, PNG, WebP, or AVIF.');
       if (e.target) e.target.value = '';
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      alert(`File is too large (${(file.size / (1024 * 1024)).toFixed(1)}MB). Maximum allowed size is 5MB.`);
+      toast.error(`File is too large (${(file.size / (1024 * 1024)).toFixed(1)}MB). Maximum allowed size is 5MB.`);
       if (e.target) e.target.value = '';
       return;
     }
@@ -66,10 +67,10 @@ export default function NewProductPage() {
       if (res.ok && data.url) {
         setImages((prev) => [...prev, data.url]);
       } else {
-        alert(data.error || 'Failed to upload image');
+        toast.error(data.error || 'Failed to upload image');
       }
     } catch {
-      alert('Error uploading file');
+      toast.error('Error uploading file');
     } finally {
       setUploading(false);
       if (e.target) e.target.value = '';
@@ -79,12 +80,12 @@ export default function NewProductPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !price) {
-      alert('Name and price are required');
+      toast.error('Name and price are required');
       return;
     }
 
     if (images.length === 0) {
-      alert('Please upload at least one product photo');
+      toast.error('Please upload at least one product photo');
       return;
     }
 
@@ -131,10 +132,10 @@ export default function NewProductPage() {
       if (res.ok) {
         router.push('/products');
       } else {
-        alert(data.error || 'Failed to save product');
+        toast.error(data.error || 'Failed to save product');
       }
     } catch {
-      alert('Error saving product');
+      toast.error('Error saving product');
     } finally {
       setLoading(false);
     }
