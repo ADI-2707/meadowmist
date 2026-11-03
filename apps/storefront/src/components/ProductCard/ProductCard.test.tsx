@@ -110,4 +110,17 @@ describe('ProductCard Component', () => {
     const img = screen.getByAltText('Amber Stoneware Mug');
     expect(img.getAttribute('sizes')).toBe('(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 30vw');
   });
+
+  it('renders consistent structure with title and pinned footer for uniform card height', () => {
+    const { container } = render(<ProductCard product={mockProduct} />);
+
+    const article = container.querySelector('article');
+    expect(article?.className).toContain('card');
+
+    const title = screen.getByRole('heading', { level: 3 });
+    expect(title.className).toContain('name');
+
+    const footer = container.querySelector('[class*="footer"]');
+    expect(footer).not.toBeNull();
+  });
 });
