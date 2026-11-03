@@ -81,6 +81,18 @@ export function OrderReturnModal({
 
     try {
       const file = files[0];
+      const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
+      if (!validTypes.includes(file.type)) {
+        setUploadError('Invalid format. Please upload JPG, PNG, or WebP.');
+        if (e.target) e.target.value = '';
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setUploadError(`Photo exceeds 5MB limit (${(file.size / (1024 * 1024)).toFixed(1)}MB).`);
+        if (e.target) e.target.value = '';
+        return;
+      }
+
       const formData = new FormData();
       formData.append('file', file);
 
@@ -249,6 +261,9 @@ export function OrderReturnModal({
               <label className={styles.label}>
                 Damage or Defect Photographs (Max 3 photos)
               </label>
+              <span style={{ display: 'block', fontSize: '0.75rem', color: '#666', marginBottom: '8px' }}>
+                Clear photos of the defect or packaging &bull; JPG, PNG, WebP up to 5MB each
+              </span>
               <div className={styles.uploadArea}>
                 {images.map((imgUrl, index) => (
                   <div key={imgUrl} className={styles.thumbnailWrapper}>
