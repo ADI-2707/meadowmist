@@ -23,6 +23,21 @@ export default defineConfig({
       },
       {
         test: {
+          name: 'shared-ui',
+          include: [
+            'packages/shared/src/**/*.test.tsx',
+          ],
+          environment: 'jsdom',
+          globals: true,
+        },
+        resolve: {
+          alias: {
+            '@meadowmist/shared': path.resolve(__dirname, 'packages/shared/src'),
+          },
+        },
+      },
+      {
+        test: {
           name: 'storefront',
           include: [
             'apps/storefront/src/**/*.test.ts',
