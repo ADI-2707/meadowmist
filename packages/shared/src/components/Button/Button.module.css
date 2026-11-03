@@ -1,0 +1,124 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2, 8px);
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-weight: 600;
+  border-radius: var(--radius-md, 8px);
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast, 180ms) var(--ease-smooth, ease),
+    color var(--duration-fast, 180ms) var(--ease-smooth, ease),
+    border-color var(--duration-fast, 180ms) var(--ease-smooth, ease),
+    transform var(--duration-fast, 180ms) var(--ease-smooth, ease),
+    box-shadow var(--duration-fast, 180ms) var(--ease-smooth, ease);
+  border: 1.5px solid transparent;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+  line-height: 1;
+}
+
+.button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.sm {
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  min-height: 32px;
+}
+
+.md {
+  padding: 10px 18px;
+  font-size: 0.875rem;
+  min-height: 42px;
+}
+
+.lg {
+  padding: 14px 24px;
+  font-size: 1rem;
+  min-height: 50px;
+}
+
+.fullWidth {
+  width: 100%;
+}
+
+.primary {
+  background-color: var(--color-forest, #33422A);
+  color: var(--color-canvas, #F7F2E7);
+  border-color: var(--color-forest, #33422A);
+}
+
+.primary:hover:not(:disabled) {
+  background-color: var(--color-forest-deep, #212B1B);
+  border-color: var(--color-forest-deep, #212B1B);
+  color: var(--color-gold-soft, #D9C08F);
+}
+
+.secondary {
+  background-color: var(--color-gold, #B4903F);
+  color: var(--color-canvas, #F7F2E7);
+  border-color: var(--color-gold, #B4903F);
+}
+
+.secondary:hover:not(:disabled) {
+  background-color: #9d7b32;
+  border-color: #9d7b32;
+}
+
+.outline {
+  background-color: transparent;
+  color: var(--color-forest, #33422A);
+  border-color: var(--color-forest, #33422A);
+}
+
+.outline:hover:not(:disabled) {
+  background-color: var(--color-forest, #33422A);
+  color: var(--color-canvas, #F7F2E7);
+}
+
+.ghost {
+  background-color: transparent;
+  color: var(--color-forest, #33422A);
+  border-color: transparent;
+}
+
+.ghost:hover:not(:disabled) {
+  background-color: rgba(51, 66, 42, 0.08);
+}
+
+.danger {
+  background-color: #c53030;
+  color: #ffffff;
+  border-color: #c53030;
+}
+
+.danger:hover:not(:disabled) {
+  background-color: #9b2c2c;
+  border-color: #9b2c2c;
+}
+
+.button:disabled,
+.disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.spinner {
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
