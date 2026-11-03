@@ -138,7 +138,7 @@ export default function ProductCard({ product }: Props) {
               src={product.images[0]}
               alt={product.name}
               fill
-              sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 30vw"
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 30vw"
               style={{ objectFit: 'cover', objectPosition: 'center' }}
               className={styles.image}
             />

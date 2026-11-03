@@ -72,14 +72,34 @@
   font-family: var(--font-body);
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .grid {
-    grid-template-columns: repeat(2, 1fr);
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    gap: var(--space-3);
+    padding-bottom: var(--space-4);
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin-inline: calc(-1 * var(--container-pad));
+    padding-inline: var(--container-pad);
+  }
+
+  .grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .grid > * {
+    flex: 0 0 clamp(190px, 28vw, 240px);
+    max-width: 240px;
+    scroll-snap-align: start;
   }
 }
 
-@media (max-width: 560px) {
-  .grid {
-    grid-template-columns: 1fr;
+@media (max-width: 640px) {
+  .grid > * {
+    flex: 0 0 clamp(155px, 44vw, 190px);
+    max-width: 190px;
   }
 }
