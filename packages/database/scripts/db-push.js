@@ -1,5 +1,6 @@
 const { execSync } = require('child_process');
 const path = require('path');
+const fs = require('fs');
 const { syncPrismaProvider } = require('./sync-provider');
 
 const cwd = path.resolve(__dirname, '..');
@@ -12,6 +13,7 @@ const env = {
 
 syncPrismaProvider(env.DATABASE_URL);
 
+const isPostgres = env.DATABASE_URL.startsWith('postgresql://') || env.DATABASE_URL.startsWith('postgres://');
 const maskedUrl = env.DATABASE_URL.startsWith('file:')
   ? 'file:***'
   : env.DATABASE_URL.replace(/:[^:@]+@/, ':****@');
@@ -23,8 +25,25 @@ execSync('npx prisma generate', {
   env,
 });
 
-execSync('npx prisma db push --accept-data-loss', {
-  stdio: 'inherit',
-  cwd,
-  env,
-});
+const migrationsDir = path.join(cwd, 'prisma/migrations');
+if (isPostgres && fs.existsSync(migrationsDir) && fs.readdirSync(migrationsDir).length > 0) {
+  console.log('[db-push] Running prisma migrate deploy for PostgreSQL...');
+  execSync('npx prisma migrate deploy', {
+    stdio: 'inherit',
+    cwd,
+    env,
+  });
+} else if (isPostgres && process.env.PRISMA_ALLOW_DATA_LOSS !== 'true') {
+  console.log('[db-push] Running safe prisma db push for PostgreSQL (without data loss)...');
+  execSync('npx prisma db push', {
+    stdio: 'inherit',
+    cwd,
+    env,
+  });
+} else {
+  execSync('npx prisma db push --accept-data-loss', {
+    stdio: 'inherit',
+    cwd,
+    env,
+  });
+}
