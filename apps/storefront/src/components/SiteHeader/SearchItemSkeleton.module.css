@@ -1,0 +1,52 @@
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--color-canvas, #f7f2e7) 0%,
+    var(--color-canvas-alt, #efe7d6) 50%,
+    var(--color-canvas, #f7f2e7) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+.thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.linePrimary {
+  width: 70%;
+  height: 14px;
+  border-radius: var(--radius-sm);
+}
+
+.lineSecondary {
+  width: 45%;
+  height: 11px;
+  border-radius: var(--radius-sm);
+}
