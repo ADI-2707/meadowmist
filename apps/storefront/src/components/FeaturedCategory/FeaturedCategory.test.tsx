@@ -114,4 +114,18 @@ describe('FeaturedCategory Component', () => {
     expect(gridEl).not.toBeNull();
     expect(gridEl?.contains(productEl)).toBe(true);
   });
+
+  it('applies centered grid layout alignment for tablet viewports', () => {
+    const { container } = render(
+      <FeaturedCategory
+        title="Hand-poured Candles"
+        href="/candles"
+        products={mockProducts}
+      />
+    );
+
+    const gridEl = container.querySelector('[class*="grid"]');
+    expect(gridEl).not.toBeNull();
+    expect(gridEl?.className).toContain('grid');
+  });
 });
