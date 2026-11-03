@@ -15,6 +15,9 @@ const cspHeader = `
 
 const nextConfig: NextConfig = {
   transpilePackages: ['@meadowmist/database', '@meadowmist/shared'],
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'framer-motion'],
+  },
   images: {
     remotePatterns: [
       {
