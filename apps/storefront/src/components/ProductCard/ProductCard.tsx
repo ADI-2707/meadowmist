@@ -19,6 +19,7 @@ export default function ProductCard({ product }: Props) {
   const cardRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const prefersReduced = useRef(false);
+  const rafId = useRef<number | null>(null);
   const items = useCartStore((s) => s.items);
   const addItem = useCartStore((s) => s.addItem);
   const updateQty = useCartStore((s) => s.updateQty);
@@ -36,21 +37,40 @@ export default function ProductCard({ product }: Props) {
 
   const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     if (prefersReduced.current || !innerRef.current || !cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    const dx = (e.clientX - cx) / (rect.width / 2);
-    const dy = (e.clientY - cy) / (rect.height / 2);
-    const rx = dy * -6;
-    const ry = dx * 6;
-    innerRef.current.style.setProperty('--card-rx', `${rx}deg`);
-    innerRef.current.style.setProperty('--card-ry', `${ry}deg`);
+    const clientX = e.clientX;
+    const clientY = e.clientY;
+    if (rafId.current !== null) return;
+    rafId.current = window.requestAnimationFrame(() => {
+      rafId.current = null;
+      if (!innerRef.current || !cardRef.current) return;
+      const rect = cardRef.current.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dx = (clientX - cx) / (rect.width / 2);
+      const dy = (clientY - cy) / (rect.height / 2);
+      const rx = dy * -6;
+      const ry = dx * 6;
+      innerRef.current.style.setProperty('--card-rx', `${rx}deg`);
+      innerRef.current.style.setProperty('--card-ry', `${ry}deg`);
+    });
   }, []);
 
   const resetTilt = useCallback(() => {
+    if (rafId.current !== null) {
+      window.cancelAnimationFrame(rafId.current);
+      rafId.current = null;
+    }
     if (!innerRef.current) return;
     innerRef.current.style.setProperty('--card-rx', '0deg');
     innerRef.current.style.setProperty('--card-ry', '0deg');
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (rafId.current !== null) {
+        window.cancelAnimationFrame(rafId.current);
+      }
+    };
   }, []);
 
   const isAddingRef = useRef(false);
