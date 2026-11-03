@@ -2,11 +2,15 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import { Home, LayoutGrid, Search, ShoppingBag } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
 import MobileCategoryDrawer from './MobileCategoryDrawer';
-import ProductSearchModal from '@/components/ProductSearchModal/ProductSearchModal';
+const ProductSearchModal = dynamic(
+  () => import('@/components/ProductSearchModal/ProductSearchModal'),
+  { ssr: false }
+);
 import styles from './MobileBottomNav.module.css';
 
 export default function MobileBottomNav() {
