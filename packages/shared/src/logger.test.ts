@@ -54,3 +54,4 @@ describe('Structured JSON Audit Logger', () => {
     expect(parsed.metadata).toEqual({ productId: 'prod_99' });
   });
 });
+
