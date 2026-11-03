@@ -44,49 +44,51 @@ export function Topbar({
 
   return (
     <header className={styles.topbar}>
-      <div className={styles.leftGroup}>
-        <button
-          type="button"
-          onClick={onOpenMobile}
-          className={styles.menuBtn}
-          aria-label="Open menu"
-        >
-          <Menu size={20} />
-        </button>
+      <div className={styles.topbarInner}>
+        <div className={styles.leftGroup}>
+          <button
+            type="button"
+            onClick={onOpenMobile}
+            className={styles.menuBtn}
+            aria-label="Open menu"
+          >
+            <Menu size={20} />
+          </button>
 
-        <h1 className={styles.pageTitle}>{getSellerPageTitle(pathname)}</h1>
+          <h1 className={styles.pageTitle}>{getSellerPageTitle(pathname)}</h1>
 
-        <div className={styles.statusIndicator}>
-          <span className={styles.statusDot} />
-          <span>Live Sync</span>
-        </div>
-      </div>
-
-      <div className={styles.rightGroup}>
-        <a
-          href={storefrontUrl}
-          target="_blank"
-          rel="noreferrer"
-          className={styles.storeLink}
-        >
-          <ExternalLink size={14} />
-          <span>Storefront</span>
-        </a>
-
-        <div className={styles.profilePill}>
-          <div className={styles.profileAvatar}>MM</div>
-          <span>Single Seller</span>
+          <div className={styles.statusIndicator}>
+            <span className={styles.statusDot} />
+            <span>Live Sync</span>
+          </div>
         </div>
 
-        <button
-          type="button"
-          onClick={onLogout}
-          className={styles.logoutBtn}
-          aria-label="Sign Out"
-        >
-          <LogOut size={14} />
-          <span>Sign Out</span>
-        </button>
+        <div className={styles.rightGroup}>
+          <a
+            href={storefrontUrl}
+            target="_blank"
+            rel="noreferrer"
+            className={styles.storeLink}
+          >
+            <ExternalLink size={14} />
+            <span>Storefront</span>
+          </a>
+
+          <div className={styles.profilePill}>
+            <div className={styles.profileAvatar}>MM</div>
+            <span>Single Seller</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={onLogout}
+            className={styles.logoutBtn}
+            aria-label="Sign Out"
+          >
+            <LogOut size={14} />
+            <span>Sign Out</span>
+          </button>
+        </div>
       </div>
     </header>
   );
