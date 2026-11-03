@@ -11,3 +11,4 @@ export * from './timing';
 export * from './validation';
 export * from './logger';
 export * from './storage';
+export * from './posthog';
