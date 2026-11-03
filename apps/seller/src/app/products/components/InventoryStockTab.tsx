@@ -6,6 +6,7 @@ import { Flame, Layers, AlertCircle, RefreshCw, IndianRupee } from 'lucide-react
 import { StatCard } from '@/components/StatCard/StatCard';
 import { StockBadge, BadgeStatus } from '@/components/StockBadge/StockBadge';
 import { Pagination } from '@/components/Pagination/Pagination';
+import { formatINR } from '@meadowmist/shared';
 import styles from '../products.module.css';
 
 interface ProductInventory {
@@ -179,7 +180,7 @@ export function InventoryStockTab() {
           />
           <StatCard
             label="Total Asset Value"
-            value={`₹${summary.totalInventoryValue.toLocaleString('en-IN')}`}
+            value={formatINR(summary.totalInventoryValue)}
             icon={IndianRupee}
             highlight
           />
@@ -271,7 +272,7 @@ export function InventoryStockTab() {
                           {p.category.toUpperCase()}
                         </span>
                       </td>
-                      <td>₹{p.price.toLocaleString('en-IN')}</td>
+                      <td>{formatINR(p.price)}</td>
                       <td>
                         <StockBadge
                           status={getStockStatus(

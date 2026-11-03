@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
@@ -16,7 +16,76 @@ import {
 import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { StatCard } from '@/components/StatCard/StatCard';
 import { StockBadge, BadgeStatus } from '@/components/StockBadge/StockBadge';
+import { Skeleton, formatINR } from '@meadowmist/shared';
 import styles from './dashboard.module.css';
+
+function DashboardSkeleton() {
+  return (
+    <div className={styles.dashboard}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)', flexWrap: 'wrap', gap: 'var(--space-4)' }}>
+        <div>
+          <Skeleton width="180px" height="28px" style={{ marginBottom: '8px' }} />
+          <Skeleton width="320px" height="16px" />
+        </div>
+        <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+          <Skeleton width="130px" height="38px" borderRadius="var(--radius-sm)" />
+          <Skeleton width="130px" height="38px" borderRadius="var(--radius-sm)" />
+        </div>
+      </div>
+
+      <div className={styles.metricsGrid}>
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div
+            key={i}
+            style={{
+              backgroundColor: '#ffffff',
+              border: '1px solid var(--color-gold-soft)',
+              borderRadius: 'var(--radius-md)',
+              padding: '16px 14px',
+              minHeight: '128px',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <Skeleton width="90px" height="14px" />
+              <Skeleton width="28px" height="28px" borderRadius="var(--radius-sm)" />
+            </div>
+            <Skeleton width="120px" height="26px" style={{ margin: '8px 0' }} />
+            <Skeleton width="80px" height="16px" borderRadius="9999px" />
+          </div>
+        ))}
+      </div>
+
+      <div className={styles.lowerGrid}>
+        <div className={styles.sectionCard}>
+          <div className={styles.cardHeader}>
+            <Skeleton width="140px" height="22px" />
+            <Skeleton width="100px" height="16px" />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} width="100%" height="40px" borderRadius="var(--radius-sm)" />
+            ))}
+          </div>
+        </div>
+
+        <div className={styles.sectionCard}>
+          <div className={styles.cardHeader}>
+            <Skeleton width="160px" height="22px" />
+            <Skeleton width="100px" height="16px" />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} width="100%" height="40px" borderRadius="var(--radius-sm)" />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 interface SummaryData {
   totalRevenue: number;
@@ -84,7 +153,7 @@ export default function AdminDashboardPage() {
   }, []);
 
   if (loading) {
-    return <div>Loading seller metrics...</div>;
+    return <DashboardSkeleton />;
   }
 
   const mapStatusToBadge = (status: string): BadgeStatus => {
@@ -117,7 +186,7 @@ export default function AdminDashboardPage() {
               <PlusCircle size={16} />
               Add Product
             </Link>
-            <Link href="/inventory" className={`${styles.actionBtn} ${styles.actionBtnSecondary}`}>
+            <Link href="/products?tab=stock" className={`${styles.actionBtn} ${styles.actionBtnSecondary}`}>
               <Boxes size={16} />
               Update Stock
             </Link>
@@ -140,7 +209,7 @@ export default function AdminDashboardPage() {
         <div className={styles.metricsGrid}>
           <StatCard
             label="Gross Revenue"
-            value={`₹${summary.totalRevenue.toLocaleString('en-IN')}`}
+            value={formatINR(summary.totalRevenue)}
             icon={IndianRupee}
             highlight={true}
             subtext="Net sales to date"
@@ -238,7 +307,7 @@ export default function AdminDashboardPage() {
                         <div style={{ fontSize: '0.75rem', opacity: 0.7 }}>{o.customerEmail}</div>
                       </td>
                       <td style={{ fontWeight: 600 }}>
-                        ₹{o.totalAmount.toLocaleString('en-IN')}
+                        {formatINR(o.totalAmount)}
                       </td>
                       <td>
                         <StockBadge status={mapStatusToBadge(o.status)} label={o.status} />

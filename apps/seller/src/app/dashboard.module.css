@@ -5,9 +5,9 @@
 }
 
 .alertBanner {
-  background-color: #fffaf0;
-  border: 1px solid #fbd38d;
-  border-left: 4px solid #dd6b20;
+  background-color: var(--color-canvas);
+  border: 1px solid var(--color-gold-soft);
+  border-left: 4px solid var(--color-gold);
   padding: var(--space-4);
   border-radius: var(--radius-sm);
   display: flex;
@@ -17,16 +17,17 @@
 }
 
 .alertText {
-  color: #7b341e;
+  color: var(--color-forest);
   font-size: var(--text-body);
   font-weight: 500;
 }
 
 .alertLink {
-  color: #dd6b20;
+  color: var(--color-gold);
   font-weight: 700;
   text-decoration: underline;
   font-size: var(--text-caption);
+  white-space: nowrap;
 }
 
 .metricsGrid {
@@ -36,7 +37,19 @@
   width: 100%;
 }
 
-@media (max-width: 860px) {
+@media (max-width: 1280px) {
+  .metricsGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .metricsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
   .metricsGrid {
     display: flex;
     flex-wrap: nowrap;
@@ -54,13 +67,14 @@
 
 .lowerGrid {
   display: grid;
-  grid-template-columns: 1.2fr 1fr;
+  grid-template-columns: 1.25fr 1fr;
   gap: var(--space-6);
 }
 
 @media (max-width: 1024px) {
   .lowerGrid {
     grid-template-columns: 1fr;
+    gap: var(--space-5);
   }
 }
 

@@ -5,6 +5,7 @@ import { Users, Mail, Phone, ShoppingBag, Heart, IndianRupee, Search } from 'luc
 import { StatCard } from '@/components/StatCard/StatCard';
 import { Pagination } from '@/components/Pagination/Pagination';
 import { useDebounce } from '@/hooks/useDebounce';
+import { formatINR } from '@meadowmist/shared';
 import styles from '../customers.module.css';
 
 interface CustomerItem {
@@ -77,7 +78,7 @@ export function ClienteleTab() {
         />
         <StatCard
           label="Clientele Lifetime Spend"
-          value={`₹${totalSpend.toLocaleString('en-IN')}`}
+          value={formatINR(totalSpend)}
           icon={IndianRupee}
           highlight
         />
@@ -158,7 +159,7 @@ export function ClienteleTab() {
                       </td>
                       <td style={{ fontWeight: 600 }}>{c.totalOrders}</td>
                       <td style={{ fontWeight: 700, color: 'var(--color-forest)' }}>
-                        ₹{c.lifetimeSpend.toLocaleString('en-IN')}
+                        {formatINR(c.lifetimeSpend)}
                       </td>
                       <td>
                         <span

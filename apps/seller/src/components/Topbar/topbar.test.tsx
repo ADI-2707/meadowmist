@@ -82,4 +82,11 @@ describe('Seller Topbar Component Rendering & Interactions', () => {
     expect(expandBtn).toBeNull();
     expect(collapseBtn).toBeNull();
   });
+
+  it('renders with topbarInner container for centered layout alignment', () => {
+    const { container } = render(<Topbar onOpenMobile={onOpenMobile} onLogout={onLogout} />);
+    const inner = container.querySelector('[class*="topbarInner"]');
+    expect(inner).toBeDefined();
+    expect(inner).not.toBeNull();
+  });
 });

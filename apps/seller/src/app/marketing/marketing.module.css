@@ -11,9 +11,10 @@
   align-items: start;
 }
 
-@media (max-width: 960px) {
+@media (max-width: 1024px) {
   .splitGrid {
     grid-template-columns: 1fr;
+    gap: var(--space-5);
   }
 }
 

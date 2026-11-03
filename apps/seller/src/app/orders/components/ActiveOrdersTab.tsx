@@ -6,6 +6,7 @@ import { Search, Eye, PackageCheck } from 'lucide-react';
 import { StockBadge, BadgeStatus } from '@/components/StockBadge/StockBadge';
 import { Pagination } from '@/components/Pagination/Pagination';
 import { useDebounce } from '@/hooks/useDebounce';
+import { formatINR } from '@meadowmist/shared';
 import styles from '../orders.module.css';
 
 interface OrderItem {
@@ -181,7 +182,7 @@ export function ActiveOrdersTab() {
                     </td>
                     <td>{totalItems} pcs</td>
                     <td style={{ fontWeight: 600 }}>
-                      ₹{o.totalAmount.toLocaleString('en-IN')}
+                      {formatINR(o.totalAmount)}
                     </td>
                     <td>
                       <span className={styles.paymentMethod}>{o.paymentMethod}</span>
