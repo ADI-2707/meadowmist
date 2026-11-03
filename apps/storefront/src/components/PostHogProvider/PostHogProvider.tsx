@@ -21,3 +21,4 @@ export default function PostHogProvider({ children }: { children: React.ReactNod
 
   return <>{children}</>;
 }
+

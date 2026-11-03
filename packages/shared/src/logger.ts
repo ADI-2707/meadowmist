@@ -41,3 +41,4 @@ export const logger = {
   audit: (context: string, message: string, metadata?: Record<string, unknown>) =>
     logEvent('audit', context, message, metadata),
 };
+

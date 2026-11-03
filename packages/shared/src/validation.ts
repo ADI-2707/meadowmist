@@ -32,3 +32,4 @@ export const orderStatusSchema = z.object({
   courierPartner: z.string().max(100).optional().nullable(),
   courierStatus: z.string().max(100).optional().nullable(),
 });
+

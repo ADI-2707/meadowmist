@@ -8,6 +8,7 @@ import {
   setRateLimitStore,
   UpstashRedisRateLimitStore,
   checkLoginAttemptDistributed,
+  checkEndpointRateLimit,
 } from './rateLimit';
 
 describe('Incremental Account Lockout Engine', () => {
@@ -159,5 +160,21 @@ describe('Incremental Account Lockout Engine', () => {
     expect(distributedCheck.allowed).toBe(false);
     expect(distributedCheck.remainingSeconds).toBeGreaterThan(0);
     expect(fetchMock).toHaveBeenCalled();
+  });
+
+  it('limits requests accurately using checkEndpointRateLimit in memory fallback', async () => {
+    delete process.env.UPSTASH_REDIS_REST_URL;
+    delete process.env.UPSTASH_REDIS_REST_TOKEN;
+
+    const id = 'test-client-ip-endpoint';
+    for (let i = 0; i < 5; i++) {
+      const res = await checkEndpointRateLimit(id, 5, 60);
+      expect(res.allowed).toBe(true);
+    }
+
+    const exceeded = await checkEndpointRateLimit(id, 5, 60);
+    expect(exceeded.allowed).toBe(false);
+    expect(exceeded.remaining).toBe(0);
+    expect(exceeded.resetSeconds).toBeGreaterThan(0);
   });
 });
