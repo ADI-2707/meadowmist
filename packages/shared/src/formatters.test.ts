@@ -1,11 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { formatCurrency, formatDate, formatRelativeTime } from './formatters';
+import { formatCurrency, formatINR, formatDate, formatRelativeTime } from './formatters';
 
 describe('Shared Formatters', () => {
   it('formats currency in Indian Rupees format', () => {
     expect(formatCurrency(1200)).toBe('₹1,200');
     expect(formatCurrency(0)).toBe('₹0');
     expect(formatCurrency(49999)).toBe('₹49,999');
+    expect(formatINR(1200)).toBe('₹1,200');
+    expect(formatINR(0)).toBe('₹0');
   });
 
   it('formats dates consistently', () => {
