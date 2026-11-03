@@ -42,15 +42,23 @@ export class MemoryRateLimitStore implements RateLimitStore {
 export class UpstashRedisRateLimitStore {
   private url: string;
   private token: string;
+  private keyPrefix: string;
 
-  constructor(url: string, token: string) {
+  constructor(url: string, token: string, keyPrefix: string = 'meadowmist:') {
     this.url = url.replace(/\/$/, '');
     this.token = token;
+    this.keyPrefix = keyPrefix;
+  }
+
+  private formatKey(key: string): string {
+    if (key.startsWith(this.keyPrefix)) return key;
+    return `${this.keyPrefix}${key}`;
   }
 
   async get(key: string): Promise<AttemptRecord | undefined> {
     try {
-      const res = await fetch(`${this.url}/get/${encodeURIComponent(key)}`, {
+      const fullKey = this.formatKey(key);
+      const res = await fetch(`${this.url}/get/${encodeURIComponent(fullKey)}`, {
         headers: { Authorization: `Bearer ${this.token}` },
       });
       if (!res.ok) return undefined;
@@ -64,8 +72,9 @@ export class UpstashRedisRateLimitStore {
 
   async set(key: string, record: AttemptRecord, ttlSeconds: number = 3600): Promise<void> {
     try {
+      const fullKey = this.formatKey(key);
       await fetch(
-        `${this.url}/set/${encodeURIComponent(key)}/${encodeURIComponent(JSON.stringify(record))}?ex=${ttlSeconds}`,
+        `${this.url}/set/${encodeURIComponent(fullKey)}/${encodeURIComponent(JSON.stringify(record))}?ex=${ttlSeconds}`,
         {
           headers: { Authorization: `Bearer ${this.token}` },
         }
@@ -75,7 +84,8 @@ export class UpstashRedisRateLimitStore {
 
   async delete(key: string): Promise<void> {
     try {
-      await fetch(`${this.url}/del/${encodeURIComponent(key)}`, {
+      const fullKey = this.formatKey(key);
+      await fetch(`${this.url}/del/${encodeURIComponent(fullKey)}`, {
         headers: { Authorization: `Bearer ${this.token}` },
       });
     } catch {}
@@ -255,4 +265,97 @@ export function resetFailedAttempts(ip: string, email: string): void {
 
 export function _clearRateLimitStore(): void {
   store.clear();
+}
+
+export interface EndpointRateLimitResult {
+  allowed: boolean;
+  remaining: number;
+  resetSeconds: number;
+}
+
+const memoryCounters = new Map<string, { count: number; expiresAt: number }>();
+
+export async function checkEndpointRateLimit(
+  identifier: string,
+  maxRequests: number = 30,
+  windowSeconds: number = 60
+): Promise<EndpointRateLimitResult> {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+  if (url && token) {
+    try {
+      const redis = new UpstashRedisRateLimitStore(url, token);
+      const key = `ratelimit:${identifier}`;
+      const existing = await redis.get(key);
+      const now = Date.now();
+
+      if (existing && existing.lockedUntil > now) {
+        if (existing.count >= maxRequests) {
+          return {
+            allowed: false,
+            remaining: 0,
+            resetSeconds: Math.ceil((existing.lockedUntil - now) / 1000),
+          };
+        }
+        const updatedCount = existing.count + 1;
+        await redis.set(
+          key,
+          {
+            count: updatedCount,
+            lockedUntil: existing.lockedUntil,
+            lastAttemptAt: now,
+          },
+          Math.max(1, Math.ceil((existing.lockedUntil - now) / 1000))
+        );
+        return {
+          allowed: true,
+          remaining: Math.max(0, maxRequests - updatedCount),
+          resetSeconds: Math.ceil((existing.lockedUntil - now) / 1000),
+        };
+      } else {
+        const lockedUntil = now + windowSeconds * 1000;
+        await redis.set(
+          key,
+          {
+            count: 1,
+            lockedUntil,
+            lastAttemptAt: now,
+          },
+          windowSeconds
+        );
+        return {
+          allowed: true,
+          remaining: maxRequests - 1,
+          resetSeconds: windowSeconds,
+        };
+      }
+    } catch {}
+  }
+
+  const now = Date.now();
+  const entry = memoryCounters.get(identifier);
+  if (entry && entry.expiresAt > now) {
+    if (entry.count >= maxRequests) {
+      return {
+        allowed: false,
+        remaining: 0,
+        resetSeconds: Math.ceil((entry.expiresAt - now) / 1000),
+      };
+    }
+    entry.count += 1;
+    return {
+      allowed: true,
+      remaining: Math.max(0, maxRequests - entry.count),
+      resetSeconds: Math.ceil((entry.expiresAt - now) / 1000),
+    };
+  }
+
+  const expiresAt = now + windowSeconds * 1000;
+  memoryCounters.set(identifier, { count: 1, expiresAt });
+  return {
+    allowed: true,
+    remaining: maxRequests - 1,
+    resetSeconds: windowSeconds,
+  };
 }

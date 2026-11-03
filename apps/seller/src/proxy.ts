@@ -1,9 +1,26 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { verifyToken, ADMIN_COOKIE_NAME } from '@meadowmist/shared';
+import { verifyToken, ADMIN_COOKIE_NAME, checkEndpointRateLimit } from '@meadowmist/shared';
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const ip = request.headers?.get?.('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1';
+
+  if (pathname.startsWith('/api/auth/login') || pathname.startsWith('/api/upload')) {
+    const rateLimit = await checkEndpointRateLimit?.(`${ip}:${pathname.split('/')[3] || 'auth'}`, 20, 60);
+    if (rateLimit && !rateLimit.allowed) {
+      return new NextResponse(
+        JSON.stringify({ error: 'Too many requests. Please try again later.' }),
+        {
+          status: 429,
+          headers: {
+            'Content-Type': 'application/json',
+            'Retry-After': String(rateLimit.resetSeconds),
+          },
+        }
+      );
+    }
+  }
 
   if (
     pathname.startsWith('/api/auth/login') ||

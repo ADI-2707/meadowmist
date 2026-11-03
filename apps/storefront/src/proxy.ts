@@ -1,9 +1,30 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { verifyToken, SESSION_COOKIE_NAME } from '@meadowmist/shared';
+import { verifyToken, SESSION_COOKIE_NAME, checkEndpointRateLimit } from '@meadowmist/shared';
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const ip = request.headers?.get?.('x-forwarded-for')?.split(',')[0].trim() || '127.0.0.1';
+
+  if (
+    pathname.startsWith('/api/auth/') ||
+    pathname.startsWith('/api/checkout') ||
+    pathname.startsWith('/checkout')
+  ) {
+    const rateLimit = await checkEndpointRateLimit?.(`${ip}:${pathname.split('/')[2] || 'req'}`, 45, 60);
+    if (rateLimit && !rateLimit.allowed) {
+      return new NextResponse(
+        JSON.stringify({ error: 'Too many requests. Please try again later.' }),
+        {
+          status: 429,
+          headers: {
+            'Content-Type': 'application/json',
+            'Retry-After': String(rateLimit.resetSeconds),
+          },
+        }
+      );
+    }
+  }
 
   const requiresAuth =
     pathname.startsWith('/checkout') ||
@@ -38,5 +59,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/checkout/:path*', '/account/:path*', '/api/account/:path*'],
+  matcher: ['/checkout/:path*', '/account/:path*', '/api/:path*'],
 };
