@@ -82,7 +82,10 @@ export default function AccountDropdown() {
 
   const handleLogout = async () => {
     closeDropdown();
-    await logout();
+    await logout(() => {
+      router.push('/');
+      router.refresh();
+    });
   };
 
   const firstName = user?.name ? user.name.split(' ')[0] : 'Account';
