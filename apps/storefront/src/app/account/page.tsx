@@ -5,10 +5,21 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCartStore } from '@/store/cartStore';
-import { OrderCancelModal } from '@/components/OrderCancelModal/OrderCancelModal';
-import { OrderReturnModal } from '@/components/OrderReturnModal/OrderReturnModal';
-import { OrderInvoiceModal } from '@/components/OrderInvoiceModal/OrderInvoiceModal';
+import dynamic from 'next/dynamic';
 import { OrderTimeline } from '@/components/OrderTimeline/OrderTimeline';
+
+const OrderCancelModal = dynamic(
+  () => import('@/components/OrderCancelModal/OrderCancelModal').then((mod) => mod.OrderCancelModal),
+  { ssr: false }
+);
+const OrderReturnModal = dynamic(
+  () => import('@/components/OrderReturnModal/OrderReturnModal').then((mod) => mod.OrderReturnModal),
+  { ssr: false }
+);
+const OrderInvoiceModal = dynamic(
+  () => import('@/components/OrderInvoiceModal/OrderInvoiceModal').then((mod) => mod.OrderInvoiceModal),
+  { ssr: false }
+);
 import { FileText, RotateCcw, ShoppingBag, AlertCircle } from 'lucide-react';
 import styles from './page.module.css';
 

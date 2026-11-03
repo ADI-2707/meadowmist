@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -57,6 +57,10 @@ export default function CheckoutPage() {
   const [placingOrder, setPlacingOrder] = useState(false);
   const [shippingRate, setShippingRate] = useState(99);
   const [freeThreshold, setFreeThreshold] = useState(1499);
+
+  const isPlacingRef = useRef(false);
+  const isCreatingAddressRef = useRef(false);
+  const isApplyingPromoRef = useRef(false);
 
   const subtotal = items.reduce((sum, i) => sum + i.price * i.qty, 0);
   const shippingCharges = subtotal >= freeThreshold || subtotal === 0 ? 0 : shippingRate;
@@ -115,7 +119,8 @@ export default function CheckoutPage() {
   }, [router]);
 
   const handleApplyPromo = async () => {
-    if (!promoCodeInput.trim()) return;
+    if (!promoCodeInput.trim() || isApplyingPromoRef.current) return;
+    isApplyingPromoRef.current = true;
     setPromoError(null);
     setPromoSuccess(null);
 
@@ -139,16 +144,20 @@ export default function CheckoutPage() {
       }
     } catch {
       setPromoError('Failed to verify promo code');
+    } finally {
+      isApplyingPromoRef.current = false;
     }
   };
 
   const handleCreateNewAddress = async () => {
+    if (isCreatingAddressRef.current) return null;
     const { fullName, phone, streetAddress, city, state, postalCode } = newAddress;
     if (!fullName || !phone || !streetAddress || !city || !state || !postalCode) {
       alert('Please fill all required address fields');
       return null;
     }
 
+    isCreatingAddressRef.current = true;
     try {
       const res = await fetch('/api/account/addresses', {
         method: 'POST',
@@ -164,34 +173,44 @@ export default function CheckoutPage() {
       }
     } catch (err) {
       console.error(err);
+    } finally {
+      isCreatingAddressRef.current = false;
     }
     return null;
   };
 
   const handlePlaceOrder = async () => {
+    if (isPlacingRef.current) return;
     if (items.length === 0) {
       alert('Your cart is empty');
       return;
     }
 
-    let addressToUse: Address | undefined;
-
-    if (showNewAddress || !selectedAddressId) {
-      const created = await handleCreateNewAddress();
-      if (!created) return;
-      addressToUse = created;
-    } else {
-      addressToUse = addresses.find((a) => a.id === selectedAddressId);
-    }
-
-    if (!addressToUse) {
-      alert('Please select or provide a delivery address');
-      return;
-    }
-
+    isPlacingRef.current = true;
     setPlacingOrder(true);
 
     try {
+      let addressToUse: Address | undefined;
+
+      if (showNewAddress || !selectedAddressId) {
+        const created = await handleCreateNewAddress();
+        if (!created) {
+          isPlacingRef.current = false;
+          setPlacingOrder(false);
+          return;
+        }
+        addressToUse = created;
+      } else {
+        addressToUse = addresses.find((a) => a.id === selectedAddressId);
+      }
+
+      if (!addressToUse) {
+        alert('Please select or provide a delivery address');
+        isPlacingRef.current = false;
+        setPlacingOrder(false);
+        return;
+      }
+
       const res = await fetch('/api/orders/place', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -228,6 +247,7 @@ export default function CheckoutPage() {
 
       if (!res.ok) {
         alert(data.error || 'Failed to place order');
+        isPlacingRef.current = false;
         setPlacingOrder(false);
         return;
       }
@@ -236,6 +256,7 @@ export default function CheckoutPage() {
       router.push(`/order-confirmation/${data.order.orderNumber}`);
     } catch {
       alert('An unexpected error occurred while placing your order.');
+      isPlacingRef.current = false;
       setPlacingOrder(false);
     }
   };

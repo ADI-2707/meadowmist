@@ -1,7 +1,9 @@
-import { notFound } from 'next/navigation';
+import React from 'react';
+import { notFound, redirect } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { prisma, OrderItem } from '@/lib/prisma';
+import { getSessionUser } from '@/lib/session';
 import styles from './page.module.css';
 
 interface Props {
@@ -22,6 +24,16 @@ export default async function OrderConfirmationPage({ params }: Props) {
 
   if (!order) {
     notFound();
+  }
+
+  if (order.userId) {
+    const session = await getSessionUser();
+    if (!session) {
+      redirect(`/login?redirect=/order-confirmation/${encodeURIComponent(id)}`);
+    }
+    if (session.userId !== order.userId && session.role !== 'ADMIN') {
+      notFound();
+    }
   }
 
   let address: {

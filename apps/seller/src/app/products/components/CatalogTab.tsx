@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { PlusCircle, Search, Trash2, Edit, Download, Upload } from 'lucide-react';
 import { StockBadge, BadgeStatus } from '@/components/StockBadge/StockBadge';
 import { Pagination } from '@/components/Pagination/Pagination';
+import { TableRowSkeleton } from '@/components/TableRowSkeleton/TableRowSkeleton';
 import { useDebounce } from '@/hooks/useDebounce';
 import styles from '../products.module.css';
 
@@ -36,10 +37,17 @@ export function CatalogTab() {
   const [limit, setLimit] = useState(20);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const debouncedSearch = useDebounce(searchTerm, 350);
 
   const fetchProducts = async (currentPage = page, currentLimit = limit) => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -49,7 +57,9 @@ export function CatalogTab() {
       params.set('page', String(currentPage));
       params.set('limit', String(currentLimit));
 
-      const res = await fetch(`/api/products?${params.toString()}`);
+      const res = await fetch(`/api/products?${params.toString()}`, {
+        signal: controller.signal,
+      });
       if (res.ok) {
         const data = await res.json();
         setProducts(data.products || []);
@@ -58,21 +68,35 @@ export function CatalogTab() {
           setTotalPages(data.pagination.totalPages);
         }
       }
+      setLoading(false);
     } catch (err) {
+      if ((err as Error)?.name === 'AbortError') {
+        return;
+      }
       console.error('Products load error:', err);
-    } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    setPage(1);
-    fetchProducts(1, limit);
+    if (page === 1) {
+      fetchProducts(1, limit);
+    } else {
+      setPage(1);
+    }
   }, [categoryFilter, statusFilter, debouncedSearch]);
 
   useEffect(() => {
     fetchProducts(page, limit);
   }, [page, limit]);
+
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,7 +107,7 @@ export function CatalogTab() {
     try {
       const res = await fetch(`/api/products/${id}`, { method: 'DELETE' });
       if (res.ok) {
-        fetchProducts();
+        fetchProducts(page, limit);
       } else {
         alert('Failed to delete product');
       }
@@ -92,83 +116,109 @@ export function CatalogTab() {
     }
   };
 
+  const handleExportCSV = async () => {
+    try {
+      const res = await fetch('/api/products/export');
+      if (!res.ok) throw new Error('Export failed');
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `meadow-mist-catalog-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('Failed to export catalog CSV');
+    }
+  };
+
   const handleImportCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setImporting(true);
     const formData = new FormData();
     formData.append('file', file);
 
+    setImporting(true);
     try {
       const res = await fetch('/api/products/import', {
         method: 'POST',
         body: formData,
       });
-
       const data = await res.json();
-      if (res.ok) {
-        alert(
-          `Import successful! Processed ${data.totalProcessed} products (${data.createdCount} added, ${data.updatedCount} updated).`
-        );
-        fetchProducts();
-      } else {
+      if (!res.ok) {
         alert(data.error || 'Failed to import CSV');
+      } else {
+        alert(
+          `Import complete!\nCreated: ${data.created}\nUpdated: ${data.updated}\nSkipped: ${data.errors?.length || 0}`
+        );
+        fetchProducts(page, limit);
       }
-    } catch {
-      alert('Error uploading and parsing CSV file');
+    } catch (err) {
+      alert('Error uploading CSV file');
     } finally {
       setImporting(false);
       e.target.value = '';
     }
   };
 
-  const getStockStatus = (qty: number, threshold: number, inStock: boolean): BadgeStatus => {
-    if (!inStock || qty <= 0) return 'out-of-stock';
-    if (qty <= threshold) return 'low-stock';
+  const getStockStatus = (
+    quantity: number,
+    lowThreshold: number,
+    inStock: boolean
+  ): BadgeStatus => {
+    if (!inStock || quantity <= 0) return 'out-of-stock';
+    if (quantity <= lowThreshold) return 'low-stock';
     return 'in-stock';
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
-        <a
-          href="/api/products/export"
-          download="meadow-mist-catalog-export.csv"
-          className={styles.secondaryBtn}
-        >
-          <Download size={16} />
-          <span>Export CSV</span>
-        </a>
-        <label className={styles.secondaryBtn}>
-          <Upload size={16} />
-          <span>{importing ? 'Importing...' : 'Import CSV'}</span>
-          <input
-            type="file"
-            accept=".csv"
-            disabled={importing}
-            onChange={handleImportCSV}
-            style={{ display: 'none' }}
-          />
-        </label>
-        <Link href="/products/new" className={styles.addBtn}>
-          <PlusCircle size={16} />
-          <span>Add New Product</span>
-        </Link>
+    <div className={styles.container}>
+      <div className={styles.actionsBar}>
+        <div className={styles.leftActions}>
+          <Link href="/products/new" className={styles.addBtn}>
+            <PlusCircle size={16} />
+            <span>Add New Piece</span>
+          </Link>
+          <button
+            type="button"
+            onClick={handleExportCSV}
+            className={styles.secondaryBtn}
+            title="Download complete catalog as CSV"
+          >
+            <Download size={15} />
+            <span>Export CSV</span>
+          </button>
+          <label
+            className={styles.secondaryBtn}
+            style={{ cursor: importing ? 'wait' : 'pointer', opacity: importing ? 0.6 : 1 }}
+            title="Upload CSV to bulk update or add items"
+          >
+            <Upload size={15} />
+            <span>{importing ? 'Importing…' : 'Import CSV'}</span>
+            <input
+              type="file"
+              accept=".csv"
+              onChange={handleImportCSV}
+              style={{ display: 'none' }}
+              disabled={importing}
+            />
+          </label>
+        </div>
       </div>
 
       <div className={styles.filterBar}>
-        <form onSubmit={handleSearchSubmit} className={styles.searchForm}>
+        <form onSubmit={handleSearchSubmit} className={styles.searchWrapper}>
+          <Search size={16} className={styles.searchIcon} />
           <input
             type="text"
-            placeholder="Search piece by name or material..."
+            placeholder="Search by name, category, scent..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className={styles.searchInput}
           />
-          <button type="submit" className={styles.searchBtn} aria-label="Search">
-            <Search size={16} />
-          </button>
         </form>
 
         <div className={styles.filterControls}>
@@ -197,28 +247,32 @@ export function CatalogTab() {
       </div>
 
       <div className={styles.tableCard}>
-        {loading ? (
-          <div className={styles.emptyState}>Loading artisan catalog...</div>
-        ) : products.length === 0 ? (
-          <div className={styles.emptyState}>
-            No products match the selected criteria.
-          </div>
-        ) : (
-          <div className={styles.tableResponsive}>
-            <table className={styles.table}>
-              <thead>
+        <div className={styles.tableResponsive}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>Stock</th>
+                <th>Badge</th>
+                <th>Store Visibility</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <TableRowSkeleton columns={7} rows={limit > 10 ? 8 : limit} />
+              ) : products.length === 0 ? (
                 <tr>
-                  <th>Product</th>
-                  <th>Category</th>
-                  <th>Price</th>
-                  <th>Stock</th>
-                  <th>Badge</th>
-                  <th>Store Visibility</th>
-                  <th>Actions</th>
+                  <td colSpan={7}>
+                    <div className={styles.emptyState}>
+                      No products match the selected criteria.
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {products.map((p) => {
+              ) : (
+                products.map((p) => {
                   let parsedImages: string[] = [];
                   try {
                     parsedImages = JSON.parse(p.images);
@@ -231,7 +285,21 @@ export function CatalogTab() {
                     <tr key={p.id}>
                       <td>
                         <div className={styles.productCell}>
-                          <div className={styles.productThumb} style={{ position: 'relative', width: '44px', height: '44px', minWidth: '44px', minHeight: '44px', borderRadius: 'var(--radius-sm)', overflow: 'hidden', backgroundColor: 'var(--color-canvas)', flexShrink: 0, border: '1px solid var(--color-gold-soft)' }}>
+                          <div
+                            className={styles.productThumb}
+                            style={{
+                              position: 'relative',
+                              width: '44px',
+                              height: '44px',
+                              minWidth: '44px',
+                              minHeight: '44px',
+                              borderRadius: 'var(--radius-sm)',
+                              overflow: 'hidden',
+                              backgroundColor: 'var(--color-canvas)',
+                              flexShrink: 0,
+                              border: '1px solid var(--color-gold-soft)',
+                            }}
+                          >
                             <Image
                               src={thumb}
                               alt={p.name}
@@ -314,11 +382,11 @@ export function CatalogTab() {
                       </td>
                     </tr>
                   );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
 
         <Pagination
           page={page}

@@ -10,6 +10,7 @@ vi.mock('@/lib/session', () => ({
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     order: {
+      count: vi.fn(),
       findMany: vi.fn(),
     },
   },
@@ -23,7 +24,7 @@ describe('Storefront Customer Orders History API Route', () => {
   it('returns 401 when customer is unauthenticated', async () => {
     vi.mocked(getSessionUser).mockResolvedValue(null);
 
-    const res = await GET();
+    const res = await GET(new Request('http://localhost:3000/api/account/orders'));
     expect(res.status).toBe(401);
   });
 
@@ -35,6 +36,7 @@ describe('Storefront Customer Orders History API Route', () => {
       role: 'CUSTOMER',
     });
 
+    vi.mocked(prisma.order.count).mockResolvedValue(1);
     vi.mocked(prisma.order.findMany).mockResolvedValue([
       {
         id: 'ord_1',
@@ -54,12 +56,12 @@ describe('Storefront Customer Orders History API Route', () => {
       } as any,
     ]);
 
-    const res = await GET();
+    const res = await GET(new Request('http://localhost:3000/api/account/orders'));
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.orders).toHaveLength(1);
     expect(body.orders[0].orderNumber).toBe('MM-ORD-2026-101');
     expect(body.orders[0].items[0].product.slug).toBe('botanical-amber-soy-candle');
+    expect(body.pagination).toBeDefined();
   });
 });
-

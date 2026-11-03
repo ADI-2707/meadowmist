@@ -1,11 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { proxy } from './proxy';
-import { verifyToken, SESSION_COOKIE_NAME } from '@meadowmist/shared';
+import { verifyToken, SESSION_COOKIE_NAME, checkEndpointRateLimit } from '@meadowmist/shared';
 import type { NextRequest } from 'next/server';
 
 vi.mock('@meadowmist/shared', () => ({
   verifyToken: vi.fn(),
   SESSION_COOKIE_NAME: 'mm_customer_session',
+  checkEndpointRateLimit: vi.fn().mockResolvedValue({ allowed: true, remaining: 10, resetSeconds: 0 }),
 }));
 
 function createMockRequest(pathname: string, cookieValue?: string): NextRequest {
@@ -13,6 +14,9 @@ function createMockRequest(pathname: string, cookieValue?: string): NextRequest 
   return {
     nextUrl: { pathname },
     url,
+    headers: {
+      get: vi.fn().mockReturnValue('127.0.0.1'),
+    },
     cookies: {
       get: vi.fn().mockImplementation((name: string) => {
         if (name === SESSION_COOKIE_NAME && cookieValue) {
@@ -87,5 +91,18 @@ describe('Storefront Proxy Authentication Guard', () => {
 
     expect(res.status).toBe(200);
   });
-});
 
+  it('returns 429 when rate limit is exceeded on sensitive routes', async () => {
+    vi.mocked(checkEndpointRateLimit).mockResolvedValueOnce({
+      allowed: false,
+      remaining: 0,
+      resetSeconds: 60,
+    });
+
+    const req = createMockRequest('/checkout');
+    const res = await proxy(req);
+
+    expect(res.status).toBe(429);
+    expect(res.headers.get('Retry-After')).toBe('60');
+  });
+});

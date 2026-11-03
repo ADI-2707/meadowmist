@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSessionUser } from '@/lib/session';
+import { wishlistItemSchema } from '@meadowmist/shared';
 
 export async function GET() {
   try {
@@ -31,12 +32,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { productId } = body;
-
-    if (!productId) {
+    const raw = await request.json();
+    const parsed = wishlistItemSchema.safeParse(raw);
+    if (!parsed.success) {
       return NextResponse.json({ error: 'productId is required' }, { status: 400 });
     }
+
+    const { productId } = parsed.data;
 
     const product = await prisma.product.findUnique({
       where: { id: productId },
@@ -77,12 +79,13 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { productId } = body;
-
-    if (!productId) {
+    const raw = await request.json();
+    const parsed = wishlistItemSchema.safeParse(raw);
+    if (!parsed.success) {
       return NextResponse.json({ error: 'productId is required' }, { status: 400 });
     }
+
+    const { productId } = parsed.data;
 
     await prisma.wishlistItem.deleteMany({
       where: {

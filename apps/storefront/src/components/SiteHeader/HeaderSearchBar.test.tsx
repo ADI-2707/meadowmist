@@ -63,4 +63,23 @@ describe('HeaderSearchBar Component', () => {
 
     expect(input.value).toBe('');
   });
+
+  it('passes abort signal to fetch requests', async () => {
+    let capturedSignal: AbortSignal | undefined;
+    global.fetch = vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
+      capturedSignal = init?.signal as AbortSignal;
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ products: [] }),
+      });
+    });
+
+    render(<HeaderSearchBar />);
+    const input = screen.getByPlaceholderText(/search candles, ceramics, scents/i);
+    fireEvent.change(input, { target: { value: 'Rose' } });
+
+    await waitFor(() => {
+      expect(capturedSignal).toBeDefined();
+    });
+  });
 });

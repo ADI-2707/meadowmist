@@ -139,6 +139,19 @@ export default function EditProductPage({ params }: Props) {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
+    if (!validTypes.includes(file.type)) {
+      alert('Invalid format. Please upload JPG, PNG, WebP, or AVIF.');
+      if (e.target) e.target.value = '';
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert(`File is too large (${(file.size / (1024 * 1024)).toFixed(1)}MB). Maximum allowed size is 5MB.`);
+      if (e.target) e.target.value = '';
+      return;
+    }
+
     setUploading(true);
     const formData = new FormData();
     formData.append('file', file);
@@ -158,6 +171,7 @@ export default function EditProductPage({ params }: Props) {
       alert('Error uploading file');
     } finally {
       setUploading(false);
+      if (e.target) e.target.value = '';
     }
   };
 
@@ -387,9 +401,12 @@ export default function EditProductPage({ params }: Props) {
             <label className={styles.uploadBox}>
               <Upload size={24} />
               <span>{uploading ? 'Uploading...' : 'Add Image'}</span>
+              <span style={{ fontSize: '0.75rem', color: '#666' }}>
+                JPG, PNG, WebP &bull; Max 5MB
+              </span>
               <input
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp,image/avif"
                 disabled={uploading}
                 onChange={handleImageUpload}
                 style={{ display: 'none' }}

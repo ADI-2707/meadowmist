@@ -6,6 +6,7 @@ import CustomerPhotosGallery from '@/components/CustomerPhotosGallery';
 import ReviewFilterBar, { ReviewFilters } from '@/components/ReviewFilterBar';
 import ReviewForm from '@/components/ReviewForm/ReviewForm';
 import ReviewList from '@/components/ReviewList/ReviewList';
+import ReviewItemSkeleton from '@/components/ReviewList/ReviewItemSkeleton';
 import type { Review, RatingDistribution, AspectScore } from '@meadowmist/shared';
 import styles from './ProductReviewsSection.module.css';
 
@@ -38,7 +39,12 @@ export default function ProductReviewsSection({
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasNext, setHasNext] = useState(false);
+
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const fetchAuth = useCallback(async () => {
     try {
@@ -51,7 +57,21 @@ export default function ProductReviewsSection({
   }, []);
 
   const fetchReviews = useCallback(
-    async (currentFilters: ReviewFilters) => {
+    async (currentFilters: ReviewFilters, targetPage = 1, append = false) => {
+      if (abortControllerRef.current && !append) {
+        abortControllerRef.current.abort();
+      }
+      const controller = new AbortController();
+      if (!append) {
+        abortControllerRef.current = controller;
+      }
+
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
+
       try {
         const params = new URLSearchParams();
         if (currentFilters.sort) params.set('sort', currentFilters.sort);
@@ -59,14 +79,26 @@ export default function ProductReviewsSection({
         if (currentFilters.verified) params.set('verified', 'true');
         if (currentFilters.withPhotos) params.set('withPhotos', 'true');
         if (currentFilters.search.trim()) params.set('search', currentFilters.search.trim());
+        params.set('page', String(targetPage));
+        params.set('limit', '5');
 
         const query = params.toString();
         const url = `/api/products/${productId}/reviews${query ? `?${query}` : ''}`;
-        const res = await fetch(url);
+        const res = await fetch(url, { signal: controller.signal });
 
         if (res.ok) {
           const data = await res.json();
-          setReviews(data.reviews || []);
+          const incomingReviews: Review[] = data.reviews || [];
+
+          if (append) {
+            setReviews((prev) => [...prev, ...incomingReviews]);
+          } else {
+            setReviews(incomingReviews);
+          }
+
+          setPage(targetPage);
+          setHasNext(Boolean(data.pagination?.hasNext));
+
           if (data.distribution) {
             setDistribution(data.distribution);
           }
@@ -81,9 +113,13 @@ export default function ProductReviewsSection({
           }
         }
       } catch (err) {
+        if ((err as Error)?.name === 'AbortError') {
+          return;
+        }
         console.error(err);
       } finally {
         setLoading(false);
+        setLoadingMore(false);
       }
     },
     [productId]
@@ -99,7 +135,7 @@ export default function ProductReviewsSection({
     }
 
     debounceTimerRef.current = setTimeout(() => {
-      fetchReviews(filters);
+      fetchReviews(filters, 1, false);
     }, 200);
 
     return () => {
@@ -108,6 +144,20 @@ export default function ProductReviewsSection({
       }
     };
   }, [fetchReviews, filters]);
+
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
+  const handleLoadMore = () => {
+    if (!loadingMore && hasNext) {
+      fetchReviews(filters, page + 1, true);
+    }
+  };
 
   const handleSelectRating = (star: number | null) => {
     setFilters((prev) => ({
@@ -135,18 +185,15 @@ export default function ProductReviewsSection({
         average: Number((totalPoints / newTotal).toFixed(1)),
         total: newTotal,
         counts: newCounts,
+        aspectScores: prev.aspectScores,
+        photoCount: (prev.photoCount ?? 0) + (newReview.images && newReview.images.length > 0 ? newReview.images.length : 0),
       };
     });
     setShowForm(false);
-    fetchReviews(filters);
   };
 
-  if (loading) {
-    return null;
-  }
-
   return (
-    <section className={styles.reviewsSection} aria-label="Customer Reviews">
+    <section className={styles.section} aria-label="Customer Reviews">
       <div className={styles.sectionHeader}>
         <div>
           <p className={styles.eyebrow}>Words from collectors</p>
@@ -187,10 +234,38 @@ export default function ProductReviewsSection({
       <ReviewFilterBar
         filters={filters}
         onChange={setFilters}
-        totalCount={reviews.length}
+        totalCount={distribution.total || reviews.length}
       />
 
-      <ReviewList reviews={reviews} productId={productId} />
+      {loading ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }} aria-busy="true">
+          <ReviewItemSkeleton />
+          <ReviewItemSkeleton />
+          <ReviewItemSkeleton />
+        </div>
+      ) : (
+        <ReviewList reviews={reviews} productId={productId} />
+      )}
+
+      {loadingMore && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', marginTop: 'var(--space-4)' }} aria-busy="true">
+          <ReviewItemSkeleton />
+          <ReviewItemSkeleton />
+        </div>
+      )}
+
+      {!loading && hasNext && (
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: 'var(--space-6)' }}>
+          <button
+            type="button"
+            onClick={handleLoadMore}
+            disabled={loadingMore}
+            className={styles.writeReviewBtn}
+          >
+            {loadingMore ? 'Loading More Reviews...' : 'Load More Reviews'}
+          </button>
+        </div>
+      )}
     </section>
   );
 }

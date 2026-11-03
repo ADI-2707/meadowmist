@@ -1,31 +1,25 @@
 import { cookies } from 'next/headers';
-import { verifyToken, TokenPayload } from './auth';
-import { TRUSTED_DEVICE_COOKIE_NAME, TRUSTED_DEVICE_MAX_AGE } from '@meadowmist/shared';
+import {
+  verifyToken,
+  TokenPayload,
+  SESSION_COOKIE_NAME,
+  ADMIN_COOKIE_NAME,
+  TRUSTED_DEVICE_COOKIE_NAME,
+  getSessionCookieOptions,
+  getTrustedDeviceCookieOptions,
+} from '@meadowmist/shared';
 
-export const SESSION_COOKIE_NAME = 'mm_session';
-export const ADMIN_COOKIE_NAME = 'mm_admin_session';
+export { SESSION_COOKIE_NAME, ADMIN_COOKIE_NAME };
 
 export async function setSessionCookie(token: string, isAdmin: boolean = false): Promise<void> {
   const cookieStore = await cookies();
   const name = isAdmin ? ADMIN_COOKIE_NAME : SESSION_COOKIE_NAME;
-  cookieStore.set(name, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 60 * 60 * 24 * (isAdmin ? 7 : 14),
-  });
+  cookieStore.set(name, token, getSessionCookieOptions(isAdmin));
 }
 
 export async function setTrustedDeviceCookie(rawToken: string): Promise<void> {
   const cookieStore = await cookies();
-  cookieStore.set(TRUSTED_DEVICE_COOKIE_NAME, rawToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: TRUSTED_DEVICE_MAX_AGE,
-  });
+  cookieStore.set(TRUSTED_DEVICE_COOKIE_NAME, rawToken, getTrustedDeviceCookieOptions());
 }
 
 export async function getTrustedDeviceToken(): Promise<string | null> {

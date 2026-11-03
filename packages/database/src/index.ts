@@ -53,9 +53,7 @@ function getPrismaClient(): PrismaClient {
 
 export const prisma = globalForPrisma.prisma ?? getPrismaClient();
 
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma;
-}
+globalForPrisma.prisma = prisma;
 
 export * from '@prisma/client';
 export default prisma;

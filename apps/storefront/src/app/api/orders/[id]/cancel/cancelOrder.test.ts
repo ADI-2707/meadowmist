@@ -18,6 +18,10 @@ vi.mock('@/lib/prisma', () => ({
       findUnique: vi.fn(),
       update: vi.fn(),
     },
+    productVariant: {
+      findUnique: vi.fn(),
+      update: vi.fn(),
+    },
     inventoryLog: {
       create: vi.fn(),
     },
@@ -171,6 +175,10 @@ describe('Order Cancellation API', () => {
           findUnique: vi.fn().mockResolvedValue({ id: 'prod_1', stockQuantity: 5 }),
           update: vi.fn().mockResolvedValue({ id: 'prod_1', stockQuantity: 7 }),
         },
+        productVariant: {
+          findUnique: vi.fn(),
+          update: vi.fn(),
+        },
         inventoryLog: {
           create: vi.fn().mockResolvedValue({ id: 'log_1' }),
         },
@@ -195,5 +203,73 @@ describe('Order Cancellation API', () => {
     const data = await res.json();
     expect(data.order.status).toBe('CANCELLED');
     expect(data.order.cancellationReason).toBe('Ordered duplicate item');
+  });
+
+  it('restores both product and variant stock when item has variantId', async () => {
+    vi.mocked(getSessionUser).mockResolvedValue({
+      userId: 'user_1',
+      email: 'user@example.com',
+      name: 'User One',
+      role: 'CUSTOMER',
+    });
+    vi.mocked(getAdminSessionUser).mockResolvedValue(null);
+
+    const mockOrder = {
+      id: 'order_123',
+      orderNumber: 'MM-ORD-1002',
+      userId: 'user_1',
+      status: 'PENDING',
+      trackingNumber: null,
+      items: [
+        { productId: 'prod_1', variantId: 'var_1', quantity: 3 },
+      ],
+    };
+
+    vi.mocked(prisma.order.findUnique).mockResolvedValue(mockOrder as any);
+
+    const updateProductMock = vi.fn().mockResolvedValue({ id: 'prod_1', stockQuantity: 13 });
+    const updateVariantMock = vi.fn().mockResolvedValue({ id: 'var_1', stockQuantity: 8 });
+    const createInventoryLogMock = vi.fn().mockResolvedValue({ id: 'log_1' });
+
+    vi.mocked(prisma.$transaction).mockImplementation(async (callback: any) => {
+      const tx = {
+        product: {
+          findUnique: vi.fn().mockResolvedValue({ id: 'prod_1', stockQuantity: 10 }),
+          update: updateProductMock,
+        },
+        productVariant: {
+          findUnique: vi.fn().mockResolvedValue({ id: 'var_1', productId: 'prod_1', sku: 'VAR-001', stockQuantity: 5 }),
+          update: updateVariantMock,
+        },
+        inventoryLog: {
+          create: createInventoryLogMock,
+        },
+        order: {
+          update: vi.fn().mockResolvedValue({
+            id: 'order_123',
+            status: 'CANCELLED',
+            cancellationReason: 'Variant canceled',
+          }),
+        },
+      };
+      return callback(tx);
+    });
+
+    const req = new Request('http://localhost:3000/api/orders/order_123/cancel', {
+      method: 'POST',
+      body: JSON.stringify({ reason: 'Variant canceled' }),
+    });
+
+    const res = await POST(req, mockContext);
+    expect(res.status).toBe(200);
+    expect(updateProductMock).toHaveBeenCalledWith({
+      where: { id: 'prod_1' },
+      data: { stockQuantity: 13, inStock: true },
+    });
+    expect(updateVariantMock).toHaveBeenCalledWith({
+      where: { id: 'var_1' },
+      data: { stockQuantity: 8, inStock: true },
+    });
+    expect(createInventoryLogMock).toHaveBeenCalledTimes(2);
   });
 });

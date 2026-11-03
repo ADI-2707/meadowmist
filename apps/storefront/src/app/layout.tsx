@@ -9,6 +9,7 @@ import ScrollProgressBar from '@/components/ScrollProgressBar/ScrollProgressBar'
 import CartToast from '@/components/CartToast/CartToast';
 import MobileBottomNav from '@/components/MobileBottomNav/MobileBottomNav';
 import KeepAlive from '@/components/KeepAlive/KeepAlive';
+import PostHogProvider from '@/components/PostHogProvider/PostHogProvider';
 
 const fraunces = Fraunces({
   subsets: ['latin'],
@@ -60,16 +61,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${fraunces.variable} ${jost.variable}`}>
       <body>
-        <IntroLoader />
-        <ScrollProgressBar />
-        <CartToast />
-        <SiteHeader />
-        <main id="main-content">
-          {children}
-        </main>
-        <Footer />
-        <MobileBottomNav />
-        <KeepAlive />
+        <PostHogProvider>
+          <IntroLoader />
+          <ScrollProgressBar />
+          <CartToast />
+          <SiteHeader />
+          <main id="main-content">
+            {children}
+          </main>
+          <Footer />
+          <MobileBottomNav />
+          <KeepAlive />
+        </PostHogProvider>
       </body>
     </html>
   );

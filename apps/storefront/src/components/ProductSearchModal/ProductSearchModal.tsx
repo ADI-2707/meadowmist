@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import StarRating from '@/components/StarRating/StarRating';
+import ModalResultSkeleton from './ModalResultSkeleton';
 import styles from './ProductSearchModal.module.css';
 
 interface ProductSearchResult {
@@ -31,6 +31,7 @@ export default function ProductSearchModal({ isOpen, onClose }: ProductSearchMod
   const [results, setResults] = useState<ProductSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -38,11 +39,17 @@ export default function ProductSearchModal({ isOpen, onClose }: ProductSearchMod
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
       setQuery('');
       setResults([]);
     }
     return () => {
       document.body.style.overflow = '';
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
     };
   }, [isOpen]);
 
@@ -68,27 +75,44 @@ export default function ProductSearchModal({ isOpen, onClose }: ProductSearchMod
 
   useEffect(() => {
     if (!query.trim()) {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
       setResults([]);
       setLoading(false);
       return;
     }
 
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setLoading(true);
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/products?search=${encodeURIComponent(query.trim())}`);
+        const res = await fetch(
+          `/api/products?search=${encodeURIComponent(query.trim())}&limit=8`,
+          { signal: controller.signal }
+        );
         if (res.ok) {
           const data = await res.json();
           setResults(data.products || []);
         }
+        setLoading(false);
       } catch (err) {
-        console.error(err);
-      } finally {
+        if ((err as Error)?.name === 'AbortError') {
+          return;
+        }
+        setResults([]);
         setLoading(false);
       }
     }, 250);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+    };
   }, [query]);
 
   if (!isOpen) return null;
@@ -120,19 +144,48 @@ export default function ProductSearchModal({ isOpen, onClose }: ProductSearchMod
             placeholder="Search candles, ceramics, notes (e.g. lavender, lotus, amber)..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            aria-label="Search catalog"
           />
 
-          <span className={styles.shortcutBadge}>ESC</span>
+          {query && (
+            <button
+              type="button"
+              className={styles.clearBtn}
+              onClick={() => {
+                if (abortControllerRef.current) {
+                  abortControllerRef.current.abort();
+                }
+                setQuery('');
+                setResults([]);
+                inputRef.current?.focus();
+              }}
+              aria-label="Clear query"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          )}
 
           <button
             type="button"
             className={styles.closeBtn}
             onClick={onClose}
-            aria-label="Close search dialog"
+            aria-label="Close search"
           >
             <svg
-              width="20"
-              height="20"
+              width="18"
+              height="18"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -148,7 +201,12 @@ export default function ProductSearchModal({ isOpen, onClose }: ProductSearchMod
 
         <div className={styles.resultsBody}>
           {loading ? (
-            <div className={styles.emptyState}>Searching our handcrafted collection...</div>
+            <div aria-busy="true">
+              <ModalResultSkeleton />
+              <ModalResultSkeleton />
+              <ModalResultSkeleton />
+              <ModalResultSkeleton />
+            </div>
           ) : query.trim().length > 0 && results.length === 0 ? (
             <div className={styles.emptyState}>
               <p className={styles.emptyTitle}>No handcrafted pieces found for &ldquo;{query}&rdquo;</p>

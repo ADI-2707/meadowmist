@@ -10,6 +10,7 @@ vi.mock('@/lib/session', () => ({
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     product: {
+      count: vi.fn(),
       findMany: vi.fn(),
       findUnique: vi.fn(),
       create: vi.fn(),
@@ -24,6 +25,7 @@ describe('Storefront Products API Route', () => {
   });
 
   it('GET executes multi-field search and calculates rating stats', async () => {
+    vi.mocked(prisma.product.count).mockResolvedValue(1);
     vi.mocked(prisma.product.findMany).mockResolvedValue([
       {
         id: 'p-1',
@@ -42,6 +44,7 @@ describe('Storefront Products API Route', () => {
     expect(body.products).toHaveLength(1);
     expect(body.products[0].averageRating).toBe(4.5);
     expect(body.products[0].reviewCount).toBe(2);
+    expect(body.pagination).toBeDefined();
     expect(prisma.product.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
@@ -53,6 +56,31 @@ describe('Storefront Products API Route', () => {
         }),
       })
     );
+  });
+
+  it('GET paginates products when page and limit query params are passed', async () => {
+    vi.mocked(prisma.product.count).mockResolvedValue(25);
+    vi.mocked(prisma.product.findMany).mockResolvedValue([
+      {
+        id: 'p-2',
+        name: 'Ceramic Mug',
+        category: 'ceramic',
+        price: 450,
+        reviews: [],
+      } as any,
+    ]);
+
+    const req = new Request('http://localhost:3000/api/products?page=2&limit=10');
+    const res = await GET(req);
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.pagination.page).toBe(2);
+    expect(body.pagination.limit).toBe(10);
+    expect(body.pagination.total).toBe(25);
+    expect(body.pagination.totalPages).toBe(3);
+    expect(body.pagination.hasNext).toBe(true);
+    expect(body.pagination.hasPrev).toBe(true);
   });
 
   it('POST returns 401 when user is not admin', async () => {

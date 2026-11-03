@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSessionUser } from '@/lib/session';
+import { cartItemSchema } from '@meadowmist/shared';
 
 export async function GET() {
   try {
@@ -42,12 +43,13 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { productId, quantity } = body;
-
-    if (!productId) {
+    const raw = await request.json();
+    const parsed = cartItemSchema.safeParse(raw);
+    if (!parsed.success) {
       return NextResponse.json({ error: 'productId is required' }, { status: 400 });
     }
+
+    const { productId, quantity } = parsed.data;
 
     if (quantity <= 0) {
       await prisma.cartItem.deleteMany({

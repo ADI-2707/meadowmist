@@ -110,6 +110,26 @@ export async function PATCH(request: Request, context: RouteContext) {
               },
             });
           }
+
+          if (item.variantId) {
+            const variant = await tx.productVariant.findUnique({ where: { id: item.variantId } });
+            if (variant) {
+              const restoredVariant = variant.stockQuantity + item.quantity;
+              await tx.productVariant.update({
+                where: { id: variant.id },
+                data: { stockQuantity: restoredVariant, inStock: true },
+              });
+              await tx.inventoryLog.create({
+                data: {
+                  productId: variant.productId,
+                  changeQuantity: item.quantity,
+                  newQuantity: restoredVariant,
+                  reason: 'ORDER_CANCELLED',
+                  note: `Variant ${variant.sku} restocked by admin cancelling order ${existing.orderNumber}`,
+                },
+              });
+            }
+          }
         }
       });
     }

@@ -200,3 +200,12 @@ export interface Order {
   createdAt: string;
   items: OrderItem[];
 }
+
+export interface CourierTrackingUpdate {
+  trackingNumber: string;
+  courierPartner: string;
+  courierStatus: string;
+  location?: string;
+  timestamp?: string;
+  delivered?: boolean;
+}

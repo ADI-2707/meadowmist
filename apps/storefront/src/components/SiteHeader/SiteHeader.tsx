@@ -18,7 +18,16 @@ export default function SiteHeader() {
   const itemCount = items.reduce((sum, i) => sum + i.qty, 0);
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 24);
+    let ticking = false;
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          setScrolled(window.scrollY > 24);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);

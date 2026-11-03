@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAdminSessionUser } from '@/lib/session';
+import { deleteUploadedFile } from '@/lib/storage';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -162,6 +163,11 @@ export async function DELETE(request: Request, context: RouteContext) {
 
     const { id } = await context.params;
 
+    const existingProduct = await prisma.product.findUnique({
+      where: { id },
+      select: { images: true },
+    });
+
     const orderItemCount = await prisma.orderItem.count({
       where: { productId: id },
     });
@@ -172,6 +178,21 @@ export async function DELETE(request: Request, context: RouteContext) {
         data: { isActive: false },
       });
       return NextResponse.json({ success: true, archived: true });
+    }
+
+    if (existingProduct?.images) {
+      try {
+        const parsedImages = JSON.parse(existingProduct.images);
+        if (Array.isArray(parsedImages)) {
+          await Promise.all(parsedImages.map((img: string) => deleteUploadedFile(img)));
+        } else if (typeof parsedImages === 'string') {
+          await deleteUploadedFile(parsedImages);
+        }
+      } catch {
+        if (typeof existingProduct.images === 'string') {
+          await deleteUploadedFile(existingProduct.images);
+        }
+      }
     }
 
     await prisma.product.delete({

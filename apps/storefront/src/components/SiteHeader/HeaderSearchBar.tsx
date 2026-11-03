@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Search, X, ArrowRight } from 'lucide-react';
+import SearchItemSkeleton from './SearchItemSkeleton';
 import styles from './HeaderSearchBar.module.css';
 
 interface ProductItem {
@@ -26,6 +27,7 @@ export default function HeaderSearchBar() {
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const fetchResults = useCallback(async (searchQuery: string) => {
     if (!searchQuery.trim()) {
@@ -33,18 +35,31 @@ export default function HeaderSearchBar() {
       setLoading(false);
       return;
     }
+
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setLoading(true);
     try {
-      const res = await fetch(`/api/products?search=${encodeURIComponent(searchQuery.trim())}`);
+      const res = await fetch(
+        `/api/products?search=${encodeURIComponent(searchQuery.trim())}&limit=6`,
+        { signal: controller.signal }
+      );
       if (res.ok) {
         const data = await res.json();
         setResults(data.products || []);
       } else {
         setResults([]);
       }
-    } catch {
+      setLoading(false);
+    } catch (err) {
+      if ((err as Error)?.name === 'AbortError') {
+        return;
+      }
       setResults([]);
-    } finally {
       setLoading(false);
     }
   }, []);
@@ -54,13 +69,26 @@ export default function HeaderSearchBar() {
       if (query.trim()) {
         fetchResults(query);
       } else {
+        if (abortControllerRef.current) {
+          abortControllerRef.current.abort();
+        }
         setResults([]);
         setLoading(false);
       }
     }, 220);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+    };
   }, [query, fetchResults]);
+
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
@@ -112,6 +140,9 @@ export default function HeaderSearchBar() {
   };
 
   const handleClear = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
     setQuery('');
     setResults([]);
     setSelectedIndex(-1);
@@ -179,7 +210,11 @@ export default function HeaderSearchBar() {
       {isOpen && query.trim().length > 0 && (
         <div className={styles.dropdown} role="listbox">
           {loading && (
-            <div className={styles.dropdownLoading}>Searching artisan collections...</div>
+            <div className={styles.dropdownList} aria-busy="true">
+              <SearchItemSkeleton />
+              <SearchItemSkeleton />
+              <SearchItemSkeleton />
+            </div>
           )}
 
           {!loading && results.length === 0 && (

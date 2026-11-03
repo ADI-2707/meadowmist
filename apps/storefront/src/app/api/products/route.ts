@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma, Prisma } from '@/lib/prisma';
 import { getAdminSessionUser } from '@/lib/session';
+import { parsePaginationParams } from '@meadowmist/shared';
 
 export async function GET(request: Request) {
   try {
@@ -42,16 +43,25 @@ export async function GET(request: Request) {
       whereClause.isActive = false;
     }
 
-    const products = await prisma.product.findMany({
-      where: whereClause,
-      include: {
-        reviews: {
-          where: { isApproved: true },
-          select: { rating: true },
+    const pageParam = url.searchParams.get('page');
+    const limitParam = url.searchParams.get('limit');
+    const isPaginated = pageParam !== null || limitParam !== null;
+    const { page, limit, skip } = parsePaginationParams(url, 20, 100);
+
+    const [total, products] = await Promise.all([
+      prisma.product.count({ where: whereClause }),
+      prisma.product.findMany({
+        where: whereClause,
+        include: {
+          reviews: {
+            where: { isApproved: true },
+            select: { rating: true },
+          },
         },
-      },
-      orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }],
-    });
+        orderBy: [{ isFeatured: 'desc' }, { createdAt: 'desc' }],
+        ...(isPaginated ? { skip, take: limit } : {}),
+      }),
+    ]);
 
     const formatted = products.map((p) => {
       const revs = p.reviews || [];
@@ -65,7 +75,19 @@ export async function GET(request: Request) {
       };
     });
 
-    return NextResponse.json({ products: formatted });
+    const totalPages = isPaginated ? Math.ceil(total / limit) : 1;
+
+    return NextResponse.json({
+      products: formatted,
+      pagination: {
+        page: isPaginated ? page : 1,
+        limit: isPaginated ? limit : total,
+        total,
+        totalPages,
+        hasNext: isPaginated ? page < totalPages : false,
+        hasPrev: isPaginated ? page > 1 : false,
+      },
+    });
   } catch (error) {
     console.error('Products GET error:', error);
     return NextResponse.json({ error: 'Failed to fetch products' }, { status: 500 });
