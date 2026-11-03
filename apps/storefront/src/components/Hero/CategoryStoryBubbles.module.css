@@ -94,16 +94,6 @@
 }
 
 @media (max-width: 768px) {
-  .container {
-    padding: var(--space-2) 0 var(--space-3);
-  }
-
-  .scrollArea {
-    justify-content: flex-start;
-    gap: var(--space-4);
-    padding-inline: var(--space-4);
-  }
-
   .bubbleItem {
     width: 68px;
   }
@@ -115,5 +105,17 @@
 
   .label {
     font-size: 0.68rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding: var(--space-2) 0 var(--space-3);
+  }
+
+  .scrollArea {
+    justify-content: flex-start;
+    gap: var(--space-4);
+    padding-inline: var(--space-4);
   }
 }
