@@ -55,13 +55,8 @@ export function ClienteleTab() {
   };
 
   useEffect(() => {
-    setPage(1);
-    fetchCustomers(1, limit);
-  }, [debouncedSearch]);
-
-  useEffect(() => {
     fetchCustomers(page, limit);
-  }, [page, limit]);
+  }, [debouncedSearch, page, limit]);
 
   const totalRegistered = total || customers.length;
   const totalOrders = customers.reduce((sum, c) => sum + c.totalOrders, 0);
@@ -95,7 +90,10 @@ export function ClienteleTab() {
             type="text"
             placeholder="Search by customer name, email, or city..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setPage(1);
+            }}
             className={styles.searchInput}
           />
         </div>

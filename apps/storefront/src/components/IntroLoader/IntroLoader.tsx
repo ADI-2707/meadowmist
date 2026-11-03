@@ -6,20 +6,17 @@ import Image from 'next/image';
 import styles from './IntroLoader.module.css';
 
 export default function IntroLoader() {
-  const [show, setShow] = useState(true);
+  const [show, setShow] = useState(false);
   const [stage, setStage] = useState<'appear' | 'zoom' | 'done'>('appear');
   const prefersReduced = useReducedMotion();
 
   useEffect(() => {
-
     const hasSeen = sessionStorage.getItem('meadow_mist_intro_seen');
     if (hasSeen || prefersReduced) {
-      setShow(false);
-      setStage('done');
       return;
     }
 
-
+    setShow(true);
     document.body.style.overflow = 'hidden';
 
 
