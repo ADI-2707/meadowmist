@@ -10,3 +10,4 @@ export * from './totp';
 export * from './timing';
 export * from './validation';
 export * from './logger';
+export * from './storage';
