@@ -134,4 +134,51 @@ describe('OrderReturnModal Component', () => {
     fireEvent.click(closeBtn);
     expect(onClose).toHaveBeenCalledTimes(2);
   });
+
+  it('rejects defect photo exceeding 5MB limit before making network request', async () => {
+    const fetchSpy = vi.spyOn(global, 'fetch');
+    const { container } = render(
+      <OrderReturnModal
+        isOpen={true}
+        orderNumber="MM-ORD-1001"
+        items={mockItems}
+        onClose={vi.fn()}
+        onConfirm={vi.fn()}
+      />
+    );
+
+    const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+    const largeFile = new File(['a'.repeat(100)], 'defect-photo.jpg', {
+      type: 'image/jpeg',
+    });
+    Object.defineProperty(largeFile, 'size', { value: 6 * 1024 * 1024 });
+
+    fireEvent.change(fileInput, { target: { files: [largeFile] } });
+
+    expect(await screen.findByText(/exceeds 5MB limit/i)).toBeDefined();
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('rejects defect photo with invalid file format before making network request', async () => {
+    const fetchSpy = vi.spyOn(global, 'fetch');
+    const { container } = render(
+      <OrderReturnModal
+        isOpen={true}
+        orderNumber="MM-ORD-1001"
+        items={mockItems}
+        onClose={vi.fn()}
+        onConfirm={vi.fn()}
+      />
+    );
+
+    const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+    const invalidFile = new File(['content'], 'defect.pdf', {
+      type: 'application/pdf',
+    });
+
+    fireEvent.change(fileInput, { target: { files: [invalidFile] } });
+
+    expect(await screen.findByText(/invalid format/i)).toBeDefined();
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
 });
