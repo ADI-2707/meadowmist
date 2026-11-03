@@ -40,6 +40,19 @@ export default function NewProductPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
+    if (!validTypes.includes(file.type)) {
+      alert('Invalid format. Please upload JPG, PNG, WebP, or AVIF.');
+      if (e.target) e.target.value = '';
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert(`File is too large (${(file.size / (1024 * 1024)).toFixed(1)}MB). Maximum allowed size is 5MB.`);
+      if (e.target) e.target.value = '';
+      return;
+    }
+
     setUploading(true);
     const formData = new FormData();
     formData.append('file', file);
@@ -59,6 +72,7 @@ export default function NewProductPage() {
       alert('Error uploading file');
     } finally {
       setUploading(false);
+      if (e.target) e.target.value = '';
     }
   };
 
@@ -247,7 +261,7 @@ export default function NewProductPage() {
           <div className={styles.uploadBox}>
             <input
               type="file"
-              accept="image/*"
+              accept="image/jpeg,image/png,image/webp,image/avif"
               id="upload-input"
               style={{ display: 'none' }}
               onChange={handleImageUpload}
@@ -256,7 +270,10 @@ export default function NewProductPage() {
             <label htmlFor="upload-input" style={{ cursor: 'pointer' }}>
               <Upload size={24} style={{ display: 'block', margin: '0 auto 8px', color: 'var(--color-gold)' }} />
               <span style={{ fontWeight: 600, color: 'var(--color-forest)' }}>
-                {uploading ? 'Uploading image...' : 'Click to Upload Product Image (JPG, PNG, WebP)'}
+                {uploading ? 'Uploading image...' : 'Click to Upload Product Image'}
+              </span>
+              <span style={{ display: 'block', fontSize: '0.8rem', color: '#666', marginTop: '4px' }}>
+                Supports JPG, PNG, WebP &bull; Max 5MB per photo
               </span>
             </label>
           </div>
