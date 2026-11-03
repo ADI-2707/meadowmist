@@ -1,4 +1,4 @@
-import { uploadAsset, deleteAsset } from '@meadowmist/shared';
+import { uploadAsset, deleteAsset } from '@meadowmist/shared/storage';
 
 export async function saveReviewPhoto(file: File): Promise<string> {
   return uploadAsset(file, 'reviews');

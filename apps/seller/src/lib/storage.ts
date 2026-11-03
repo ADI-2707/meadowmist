@@ -1,4 +1,4 @@
-import { uploadAsset, deleteAsset, optimizeImage } from '@meadowmist/shared';
+import { uploadAsset, deleteAsset, optimizeImage } from '@meadowmist/shared/storage';
 
 export { optimizeImage };
 
