@@ -40,6 +40,7 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: var(--space-6);
+  justify-content: center;
 }
 
 .cta {
@@ -84,6 +85,7 @@
     scrollbar-width: none;
     margin-inline: calc(-1 * var(--container-pad));
     padding-inline: var(--container-pad);
+    justify-content: safe center;
   }
 
   .grid::-webkit-scrollbar {
@@ -98,6 +100,10 @@
 }
 
 @media (max-width: 640px) {
+  .grid {
+    justify-content: flex-start;
+  }
+
   .grid > * {
     flex: 0 0 clamp(155px, 44vw, 190px);
     max-width: 190px;
