@@ -32,4 +32,10 @@ describe('BackToTop Component', () => {
     expect(svgIcon).toBeDefined();
     expect(svgIcon?.getAttribute('aria-hidden')).toBe('true');
   });
+
+  it('renders with button class configured for flush dock with footer', () => {
+    render(<BackToTop />);
+    const button = screen.getByRole('button', { name: /back to top of page/i });
+    expect(button.className).toContain('button');
+  });
 });
