@@ -335,9 +335,11 @@ export function ReviewsModerationTab() {
                                 onClick={() => setPreviewPhotoUrl(imgUrl)}
                                 title="View customer photo"
                               >
-                                <img
+                                <Image
                                   src={imgUrl}
                                   alt={`Customer upload ${idx + 1}`}
+                                  width={40}
+                                  height={40}
                                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                 />
                               </button>
@@ -508,9 +510,11 @@ export function ReviewsModerationTab() {
             >
               <X size={24} />
             </button>
-            <img
+            <Image
               src={previewPhotoUrl}
               alt="Customer photo zoom"
+              width={800}
+              height={600}
               style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: '8px', objectFit: 'contain' }}
             />
           </div>

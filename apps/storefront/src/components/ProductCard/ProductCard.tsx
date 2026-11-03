@@ -6,6 +6,7 @@ import Image from 'next/image';
 import type { Product } from '@/types/product';
 import { useCartStore } from '@/store/cartStore';
 import { useWishlistStore } from '@/store/wishlistStore';
+import { formatCurrency } from '@meadowmist/shared';
 import PriceTag from '@/components/PriceTag/PriceTag';
 import ScentBadge from '@/components/ScentBadge/ScentBadge';
 import StarRating from '@/components/StarRating/StarRating';
@@ -131,14 +132,14 @@ export default function ProductCard({ product }: Props) {
         <Link
           href={`/product/${product.slug}`}
           className={styles.imageLink}
-          aria-label={`View ${product.name} — ₹${(product.salePrice ?? product.price).toLocaleString('en-IN')}`}
+          aria-label={`View ${product.name} — ${formatCurrency(product.salePrice ?? product.price)}`}
         >
           <div className={styles.imageWrapper}>
             <Image
               src={product.images[0]}
               alt={product.name}
               fill
-              sizes="(max-width: 640px) 90vw, (max-width: 1024px) 45vw, 30vw"
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 30vw"
               style={{ objectFit: 'cover', objectPosition: 'center' }}
               className={styles.image}
             />

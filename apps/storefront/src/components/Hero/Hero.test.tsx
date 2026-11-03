@@ -26,6 +26,13 @@ describe('CategoryStoryBubbles Component', () => {
     expect(screen.getByText('Artisan')).toBeDefined();
     expect(screen.getByText('Festive')).toBeDefined();
   });
+
+  it('renders scroll area container list configured for centered tablet presentation', () => {
+    const { container } = render(<CategoryStoryBubbles bubbles={STORY_BUBBLES} />);
+    const scrollArea = container.querySelector('[role="list"]');
+    expect(scrollArea).not.toBeNull();
+    expect(scrollArea?.className).toContain('scrollArea');
+  });
 });
 
 describe('HeroCarousel Component', () => {

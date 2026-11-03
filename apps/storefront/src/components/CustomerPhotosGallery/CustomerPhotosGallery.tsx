@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import Image from 'next/image';
 import type { Review } from '@meadowmist/shared';
 import StarRating from '../StarRating/StarRating';
 import styles from './CustomerPhotosGallery.module.css';
@@ -125,11 +126,12 @@ export default function CustomerPhotosGallery({
             onClick={() => handleOpen(idx)}
             aria-label={`View photo ${idx + 1} of ${items.length}`}
           >
-            <img
+            <Image
               src={item.url}
               alt={`Customer preview ${idx + 1}`}
               className={styles.thumbImg}
-              loading="lazy"
+              width={96}
+              height={96}
             />
           </button>
         ))}
@@ -173,10 +175,12 @@ export default function CustomerPhotosGallery({
                 </button>
               )}
 
-              <img
+              <Image
                 src={activeItem.url}
                 alt={`Customer photo ${activeIndex + 1}`}
                 className={styles.mainImage}
+                width={800}
+                height={600}
               />
 
               {items.length > 1 && (

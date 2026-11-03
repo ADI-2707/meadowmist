@@ -1,19 +1,19 @@
 import React from 'react';
+import { Skeleton } from '@meadowmist/shared';
 import styles from './ReviewItemSkeleton.module.css';
 
 export default function ReviewItemSkeleton() {
   return (
     <article className={styles.card} aria-hidden="true" data-testid="review-item-skeleton">
       <div className={styles.header}>
-        <div className={`${styles.avatar} ${styles.shimmer}`} />
+        <Skeleton className={styles.avatar} variant="circular" />
         <div className={styles.authorMeta}>
-          <div className={`${styles.authorName} ${styles.shimmer}`} />
-          <div className={`${styles.ratingRow} ${styles.shimmer}`} />
+          <Skeleton className={styles.authorName} variant="text" />
+          <Skeleton className={styles.ratingRow} variant="text" />
         </div>
       </div>
-      <div className={`${styles.commentLine1} ${styles.shimmer}`} />
-      <div className={`${styles.commentLine2} ${styles.shimmer}`} />
+      <Skeleton className={styles.commentLine1} variant="text" />
+      <Skeleton className={styles.commentLine2} variant="text" />
     </article>
   );
 }
-

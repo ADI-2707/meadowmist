@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import StarRating from '@/components/StarRating/StarRating';
 import type { Review } from '@meadowmist/shared';
 import styles from './ReviewList.module.css';
@@ -175,11 +176,12 @@ export default function ReviewList({
                     onClick={() => onPhotoClick?.(imgUrl, r)}
                     aria-label={`View full customer image ${idx + 1}`}
                   >
-                    <img
+                    <Image
                       src={imgUrl}
                       alt={`Customer review upload ${idx + 1}`}
                       className={styles.photoThumbImg}
-                      loading="lazy"
+                      width={80}
+                      height={80}
                     />
                   </button>
                 ))}

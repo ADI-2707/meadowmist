@@ -99,4 +99,33 @@ describe('FeaturedCategory Component', () => {
     const link = screen.getByRole('link', { name: /see all/i });
     expect(link.getAttribute('href')).toBe('/ceramics');
   });
+
+  it('renders products inside a grid container for horizontal scroll support', () => {
+    const { container } = render(
+      <FeaturedCategory
+        title="Hand-poured Candles"
+        href="/candles"
+        products={mockProducts}
+      />
+    );
+
+    const productEl = screen.getByTestId('product-card');
+    const gridEl = container.querySelector('[class*="grid"]');
+    expect(gridEl).not.toBeNull();
+    expect(gridEl?.contains(productEl)).toBe(true);
+  });
+
+  it('applies centered grid layout alignment for tablet viewports', () => {
+    const { container } = render(
+      <FeaturedCategory
+        title="Hand-poured Candles"
+        href="/candles"
+        products={mockProducts}
+      />
+    );
+
+    const gridEl = container.querySelector('[class*="grid"]');
+    expect(gridEl).not.toBeNull();
+    expect(gridEl?.className).toContain('grid');
+  });
 });

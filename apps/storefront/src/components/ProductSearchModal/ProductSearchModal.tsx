@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import ModalResultSkeleton from './ModalResultSkeleton';
@@ -33,6 +33,15 @@ export default function ProductSearchModal({ isOpen, onClose }: ProductSearchMod
   const inputRef = useRef<HTMLInputElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  const handleClose = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    setQuery('');
+    setResults([]);
+    onClose();
+  }, [onClose]);
+
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 50);
@@ -42,8 +51,6 @@ export default function ProductSearchModal({ isOpen, onClose }: ProductSearchMod
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
-      setQuery('');
-      setResults([]);
     }
     return () => {
       document.body.style.overflow = '';
@@ -58,20 +65,20 @@ export default function ProductSearchModal({ isOpen, onClose }: ProductSearchMod
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         if (isOpen) {
-          onClose();
+          handleClose();
         } else {
           const btn = document.getElementById('search-trigger-btn');
           btn?.click();
         }
       }
       if (e.key === 'Escape' && isOpen) {
-        onClose();
+        handleClose();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, handleClose]);
 
   useEffect(() => {
     if (!query.trim()) {
@@ -118,7 +125,7 @@ export default function ProductSearchModal({ isOpen, onClose }: ProductSearchMod
   if (!isOpen) return null;
 
   return (
-    <div className={styles.backdrop} onClick={onClose} role="dialog" aria-modal="true">
+    <div className={styles.backdrop} onClick={handleClose} role="dialog" aria-modal="true">
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.searchHeader}>
           <svg
@@ -180,7 +187,7 @@ export default function ProductSearchModal({ isOpen, onClose }: ProductSearchMod
           <button
             type="button"
             className={styles.closeBtn}
-            onClick={onClose}
+            onClick={handleClose}
             aria-label="Close search"
           >
             <svg
@@ -239,7 +246,7 @@ export default function ProductSearchModal({ isOpen, onClose }: ProductSearchMod
                   key={p.id}
                   href={`/product/${p.slug}`}
                   className={styles.resultItem}
-                  onClick={onClose}
+                  onClick={handleClose}
                 >
                   <Image
                     src={img}

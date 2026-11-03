@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Save } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
+import { toast } from '@meadowmist/shared';
 import styles from './settings.module.css';
 
 export default function AdminSettingsPage() {
@@ -72,12 +73,12 @@ export default function AdminSettingsPage() {
       });
 
       if (res.ok) {
-        alert('Store and shipping settings updated successfully');
+        toast.success('Store and shipping settings updated successfully');
       } else {
-        alert('Failed to update settings');
+        toast.error('Failed to update settings');
       }
     } catch {
-      alert('Error saving settings');
+      toast.error('Error saving settings');
     } finally {
       setSaving(false);
     }

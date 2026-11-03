@@ -67,6 +67,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(clamp(260px, 28vw, 360px), 1fr));
   gap: clamp(var(--space-4), 3vw, var(--space-8));
+  justify-content: center;
 }
 
 .empty {
@@ -93,7 +94,15 @@
   padding: var(--space-2);
 }
 
-@media (max-width: 600px) {
+@media (max-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--space-3);
+    justify-content: center;
+  }
+}
+
+@media (max-width: 640px) {
   .filterBar {
     flex-wrap: nowrap;
     overflow-x: auto;
@@ -109,6 +118,7 @@
     flex-shrink: 0;
   }
   .grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
   }
 }

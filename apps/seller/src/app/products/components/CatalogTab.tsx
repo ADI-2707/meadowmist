@@ -8,6 +8,7 @@ import { StockBadge, BadgeStatus } from '@/components/StockBadge/StockBadge';
 import { Pagination } from '@/components/Pagination/Pagination';
 import { TableRowSkeleton } from '@/components/TableRowSkeleton/TableRowSkeleton';
 import { useDebounce } from '@/hooks/useDebounce';
+import { toast } from '@meadowmist/shared';
 import styles from '../products.module.css';
 
 interface ProductItem {
@@ -109,10 +110,10 @@ export function CatalogTab() {
       if (res.ok) {
         fetchProducts(page, limit);
       } else {
-        alert('Failed to delete product');
+        toast.error('Failed to delete product');
       }
     } catch {
-      alert('Error deleting product');
+      toast.error('Error deleting product');
     }
   };
 
@@ -130,7 +131,7 @@ export function CatalogTab() {
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      alert('Failed to export catalog CSV');
+      toast.error('Failed to export catalog CSV');
     }
   };
 
@@ -149,15 +150,15 @@ export function CatalogTab() {
       });
       const data = await res.json();
       if (!res.ok) {
-        alert(data.error || 'Failed to import CSV');
+        toast.error(data.error || 'Failed to import CSV');
       } else {
-        alert(
-          `Import complete!\nCreated: ${data.created}\nUpdated: ${data.updated}\nSkipped: ${data.errors?.length || 0}`
+        toast.success(
+          `Import complete! Created: ${data.created}, Updated: ${data.updated}, Skipped: ${data.errors?.length || 0}`
         );
         fetchProducts(page, limit);
       }
     } catch (err) {
-      alert('Error uploading CSV file');
+      toast.error('Error uploading CSV file');
     } finally {
       setImporting(false);
       e.target.value = '';

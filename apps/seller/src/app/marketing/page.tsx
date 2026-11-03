@@ -5,10 +5,24 @@ import { useSearchParams } from 'next/navigation';
 import { Tag, Image as ImageIcon, BookOpen, HelpCircle } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { TabNav, TabItem } from '@/components/TabNav/TabNav';
-import { PromotionsTab } from './components/PromotionsTab';
-import { BannersTab } from './components/BannersTab';
-import { JournalTab } from './components/JournalTab';
-import { FaqsTab } from './components/FaqsTab';
+import dynamic from 'next/dynamic';
+
+const PromotionsTab = dynamic(
+  () => import('./components/PromotionsTab').then((m) => m.PromotionsTab),
+  { ssr: false }
+);
+const BannersTab = dynamic(
+  () => import('./components/BannersTab').then((m) => m.BannersTab),
+  { ssr: false }
+);
+const JournalTab = dynamic(
+  () => import('./components/JournalTab').then((m) => m.JournalTab),
+  { ssr: false }
+);
+const FaqsTab = dynamic(
+  () => import('./components/FaqsTab').then((m) => m.FaqsTab),
+  { ssr: false }
+);
 import styles from './marketing.module.css';
 
 function MarketingContent() {

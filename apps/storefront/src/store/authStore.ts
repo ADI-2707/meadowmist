@@ -14,7 +14,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   checkAuth: () => Promise<void>;
-  logout: () => Promise<void>;
+  logout: (onSuccess?: () => void) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -36,13 +36,17 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ user: null, isAuthenticated: false, isLoading: false });
     }
   },
-  logout: async () => {
+  logout: async (onSuccess?: () => void) => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
     } catch {
     } finally {
       set({ user: null, isAuthenticated: false });
-      window.location.href = '/';
+      if (onSuccess) {
+        onSuccess();
+      } else if (typeof window !== 'undefined' && window.location.pathname !== '/') {
+        window.location.assign(window.location.origin + '/');
+      }
     }
   },
 }));

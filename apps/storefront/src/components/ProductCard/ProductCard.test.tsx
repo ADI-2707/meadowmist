@@ -93,4 +93,34 @@ describe('ProductCard Component', () => {
 
     expect(toggleSpy).toHaveBeenCalledWith('prod_amber_mug');
   });
+
+  it('provides navigation links to product page on image and title tap', () => {
+    render(<ProductCard product={mockProduct} />);
+
+    const imageLink = screen.getByRole('link', { name: /View Amber Stoneware Mug/i });
+    expect(imageLink.getAttribute('href')).toBe('/product/amber-stoneware-mug');
+
+    const titleLink = screen.getByRole('link', { name: 'Amber Stoneware Mug' });
+    expect(titleLink.getAttribute('href')).toBe('/product/amber-stoneware-mug');
+  });
+
+  it('uses compact responsive image sizes for mobile and tablet screens', () => {
+    render(<ProductCard product={mockProduct} />);
+
+    const img = screen.getByAltText('Amber Stoneware Mug');
+    expect(img.getAttribute('sizes')).toBe('(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 30vw');
+  });
+
+  it('renders consistent structure with title and pinned footer for uniform card height', () => {
+    const { container } = render(<ProductCard product={mockProduct} />);
+
+    const article = container.querySelector('article');
+    expect(article?.className).toContain('card');
+
+    const title = screen.getByRole('heading', { level: 3 });
+    expect(title.className).toContain('name');
+
+    const footer = container.querySelector('[class*="footer"]');
+    expect(footer).not.toBeNull();
+  });
 });

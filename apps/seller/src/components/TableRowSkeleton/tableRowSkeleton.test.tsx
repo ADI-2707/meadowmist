@@ -5,7 +5,7 @@ import { TableRowSkeleton } from './TableRowSkeleton';
 
 describe('TableRowSkeleton', () => {
   it('renders specified number of rows and columns with aria-hidden', () => {
-    render(
+    const { container } = render(
       <table>
         <tbody>
           <TableRowSkeleton columns={4} rows={3} />
@@ -20,5 +20,8 @@ describe('TableRowSkeleton', () => {
       const cells = row.querySelectorAll('td');
       expect(cells).toHaveLength(4);
     });
+
+    const statusIndicators = container.querySelectorAll('[role="status"]');
+    expect(statusIndicators.length).toBe(12);
   });
 });
