@@ -18,3 +18,13 @@ export function getSessionCookieOptions(isAdmin: boolean = false): CookieOptions
     maxAge: 60 * 60 * 24 * (isAdmin ? 7 : 14),
   };
 }
+
+export function getTrustedDeviceCookieOptions(): CookieOptions {
+  return {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 60 * 60 * 24 * 30,
+  };
+}
