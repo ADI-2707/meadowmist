@@ -9,6 +9,7 @@ vi.mock('@/lib/prisma', () => ({
       findFirst: vi.fn(),
     },
     review: {
+      count: vi.fn(),
       findMany: vi.fn(),
       upsert: vi.fn(),
       create: vi.fn(),
@@ -44,6 +45,7 @@ describe('Product Reviews API Route', () => {
 
   it('GET calculates average rating and distribution counts correctly', async () => {
     vi.mocked(prisma.product.findFirst).mockResolvedValue({ id: 'prod-1', category: 'candle' } as any);
+    vi.mocked(prisma.review.count).mockResolvedValue(3);
     vi.mocked(prisma.review.findMany).mockResolvedValue([
       { id: 'rev-1', rating: 5, comment: 'Amazing', createdAt: new Date() } as any,
       { id: 'rev-2', rating: 4, comment: 'Great', createdAt: new Date() } as any,
@@ -61,6 +63,27 @@ describe('Product Reviews API Route', () => {
     expect(body.distribution.counts[5]).toBe(2);
     expect(body.distribution.counts[4]).toBe(1);
     expect(body.distribution.counts[1]).toBe(0);
+    expect(body.pagination).toBeDefined();
+  });
+
+  it('GET supports page and limit query parameters', async () => {
+    vi.mocked(prisma.product.findFirst).mockResolvedValue({ id: 'prod-1', category: 'candle' } as any);
+    vi.mocked(prisma.review.count).mockResolvedValue(12);
+    vi.mocked(prisma.review.findMany).mockResolvedValue([
+      { id: 'rev-1', rating: 5, comment: 'Page item', createdAt: new Date() } as any,
+    ]);
+
+    const req = new Request('http://localhost:3000/api/products/prod-1/reviews?page=2&limit=5');
+    const res = await GET(req, { params: Promise.resolve({ id: 'prod-1' }) });
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.pagination.page).toBe(2);
+    expect(body.pagination.limit).toBe(5);
+    expect(body.pagination.total).toBe(12);
+    expect(body.pagination.totalPages).toBe(3);
+    expect(body.pagination.hasNext).toBe(true);
+    expect(body.pagination.hasPrev).toBe(true);
   });
 
   it('POST returns 401 when user is not authenticated', async () => {

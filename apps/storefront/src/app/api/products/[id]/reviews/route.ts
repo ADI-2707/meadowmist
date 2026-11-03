@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSessionUser } from '@/lib/session';
+import { parsePaginationParams } from '@meadowmist/shared';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -160,15 +161,24 @@ export async function GET(request: Request, context: RouteContext) {
       orderBy = [{ helpfulCount: 'desc' }, { createdAt: 'desc' }];
     }
 
-    const filteredReviews = await prisma.review.findMany({
-      where: whereClause,
-      orderBy,
-      include: {
-        user: {
-          select: { name: true },
+    const pageParam = searchParams.get('page');
+    const limitParam = searchParams.get('limit');
+    const isPaginated = pageParam !== null || limitParam !== null;
+    const { page, limit, skip } = parsePaginationParams(searchParams, 5, 50);
+
+    const [filteredCount, filteredReviews] = await Promise.all([
+      prisma.review.count({ where: whereClause }),
+      prisma.review.findMany({
+        where: whereClause,
+        orderBy,
+        include: {
+          user: {
+            select: { name: true },
+          },
         },
-      },
-    });
+        ...(isPaginated ? { skip, take: limit } : {}),
+      }),
+    ]);
 
     let userVotedIds = new Set<string>();
     if (session) {
@@ -218,6 +228,8 @@ export async function GET(request: Request, context: RouteContext) {
       };
     });
 
+    const totalPages = isPaginated ? Math.ceil(filteredCount / limit) : 1;
+
     return NextResponse.json({
       reviews: formattedReviews,
       customerPhotos,
@@ -227,6 +239,14 @@ export async function GET(request: Request, context: RouteContext) {
         counts,
         aspectScores,
         photoCount: customerPhotos.length,
+      },
+      pagination: {
+        page: isPaginated ? page : 1,
+        limit: isPaginated ? limit : filteredCount,
+        total: filteredCount,
+        totalPages,
+        hasNext: isPaginated ? page < totalPages : false,
+        hasPrev: isPaginated ? page > 1 : false,
       },
     });
   } catch (error) {
