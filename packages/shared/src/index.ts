@@ -17,3 +17,4 @@ export * from './components/KeepAlive/KeepAlive';
 export * from './components/PostHogProvider/PostHogProvider';
 export * from './components/Button/Button';
 export * from './components/Modal/Modal';
+export * from './components/Toast/Toast';
