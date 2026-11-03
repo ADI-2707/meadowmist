@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { X, Sparkles, Loader2, Flame, ShieldAlert, UploadCloud, Trash2 } from 'lucide-react';
 import styles from './OrderReturnModal.module.css';
 
@@ -267,7 +268,7 @@ export function OrderReturnModal({
               <div className={styles.uploadArea}>
                 {images.map((imgUrl, index) => (
                   <div key={imgUrl} className={styles.thumbnailWrapper}>
-                    <img src={imgUrl} alt={`Damage photo ${index + 1}`} className={styles.thumbnail} />
+                    <Image src={imgUrl} alt={`Damage photo ${index + 1}`} className={styles.thumbnail} width={64} height={64} />
                     <button
                       type="button"
                       onClick={() => removeImage(index)}

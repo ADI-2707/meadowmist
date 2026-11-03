@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useMemo } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import StarRating from '@/components/StarRating/StarRating';
 import type { Review } from '@meadowmist/shared';
 import styles from './ReviewForm.module.css';
@@ -273,7 +274,7 @@ export default function ReviewForm({
           <div className={styles.photoPreviewRow}>
             {images.map((url, idx) => (
               <div key={url + idx} className={styles.previewCard}>
-                <img src={url} alt={`Preview ${idx + 1}`} className={styles.previewImg} />
+                <Image src={url} alt={`Preview ${idx + 1}`} className={styles.previewImg} width={64} height={64} />
                 <button
                   type="button"
                   className={styles.removePhotoBtn}
