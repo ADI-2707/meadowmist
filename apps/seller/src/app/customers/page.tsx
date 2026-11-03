@@ -5,10 +5,24 @@ import { useSearchParams } from 'next/navigation';
 import { Users, MessageSquare, Star, Mail } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { TabNav, TabItem } from '@/components/TabNav/TabNav';
-import { ClienteleTab } from './components/ClienteleTab';
-import { SupportInboxTab } from './components/SupportInboxTab';
-import { ReviewsModerationTab } from './components/ReviewsModerationTab';
-import { NewsletterSubscribersTab } from './components/NewsletterSubscribersTab';
+import dynamic from 'next/dynamic';
+
+const ClienteleTab = dynamic(
+  () => import('./components/ClienteleTab').then((m) => m.ClienteleTab),
+  { ssr: false }
+);
+const SupportInboxTab = dynamic(
+  () => import('./components/SupportInboxTab').then((m) => m.SupportInboxTab),
+  { ssr: false }
+);
+const ReviewsModerationTab = dynamic(
+  () => import('./components/ReviewsModerationTab').then((m) => m.ReviewsModerationTab),
+  { ssr: false }
+);
+const NewsletterSubscribersTab = dynamic(
+  () => import('./components/NewsletterSubscribersTab').then((m) => m.NewsletterSubscribersTab),
+  { ssr: false }
+);
 import styles from './customers.module.css';
 
 function CustomersContent() {
