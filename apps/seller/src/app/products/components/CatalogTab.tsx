@@ -169,9 +169,9 @@ export function CatalogTab() {
     lowThreshold: number,
     inStock: boolean
   ): BadgeStatus => {
-    if (!inStock || quantity <= 0) return 'OUT_OF_STOCK';
-    if (quantity <= lowThreshold) return 'LOW_STOCK';
-    return 'IN_STOCK';
+    if (!inStock || quantity <= 0) return 'out-of-stock';
+    if (quantity <= lowThreshold) return 'low-stock';
+    return 'in-stock';
   };
 
   return (

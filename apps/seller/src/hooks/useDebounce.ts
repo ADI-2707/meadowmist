@@ -16,13 +16,16 @@ export function useDebounce<T>(value: T, delayMs: number = 350): T {
   return debouncedValue;
 }
 
-export function useDebouncedCallback<T extends (...args: any[]) => any>(
+export function useDebouncedCallback<T extends (...args: unknown[]) => unknown>(
   callback: T,
   delayMs: number = 350
 ) {
   const callbackRef = useRef(callback);
-  callbackRef.current = callback;
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    callbackRef.current = callback;
+  }, [callback]);
 
   const cancel = useCallback(() => {
     if (timerRef.current !== null) {

@@ -102,3 +102,4 @@ describe('throttle', () => {
     expect(fn).toHaveBeenLastCalledWith(2);
   });
 });
+

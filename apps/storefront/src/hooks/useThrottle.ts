@@ -2,9 +2,14 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 
 export function useThrottle<T>(value: T, intervalMs: number = 200): T {
   const [throttledValue, setThrottledValue] = useState<T>(value);
-  const lastExecuted = useRef<number>(Date.now());
+  const lastExecuted = useRef<number>(0);
 
   useEffect(() => {
+    if (lastExecuted.current === 0) {
+      lastExecuted.current = Date.now();
+      return;
+    }
+
     const elapsed = Date.now() - lastExecuted.current;
     if (elapsed >= intervalMs) {
       lastExecuted.current = Date.now();
@@ -22,10 +27,13 @@ export function useThrottle<T>(value: T, intervalMs: number = 200): T {
   return throttledValue;
 }
 
-export function useRafThrottle<T extends (...args: any[]) => void>(callback: T): T {
+export function useRafThrottle<T extends (...args: unknown[]) => void>(callback: T): T {
   const callbackRef = useRef(callback);
-  callbackRef.current = callback;
   const rafId = useRef<number | null>(null);
+
+  useEffect(() => {
+    callbackRef.current = callback;
+  }, [callback]);
 
   const throttled = useCallback((...args: Parameters<T>) => {
     if (rafId.current !== null) return;

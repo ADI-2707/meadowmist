@@ -186,7 +186,7 @@ export default function ProductReviewsSection({
         total: newTotal,
         counts: newCounts,
         aspectScores: prev.aspectScores,
-        photoCount: prev.photoCount + (newReview.images && newReview.images.length > 0 ? newReview.images.length : 0),
+        photoCount: (prev.photoCount ?? 0) + (newReview.images && newReview.images.length > 0 ? newReview.images.length : 0),
       };
     });
     setShowForm(false);

@@ -26,3 +26,4 @@ export function TableRowSkeleton({ columns = 6, rows = 5 }: TableRowSkeletonProp
     </>
   );
 }
+

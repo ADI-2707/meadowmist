@@ -98,3 +98,4 @@ describe('Checkout Mutex Protection', () => {
     expect(placeCalls).toHaveLength(1);
   });
 });
+
