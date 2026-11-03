@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { ArrowLeft, Truck, CheckCircle2, AlertCircle, Printer } from 'lucide-react';
 import { PageHeader } from '@/components/PageHeader/PageHeader';
 import { StockBadge } from '@/components/StockBadge/StockBadge';
+import { toast } from '@meadowmist/shared';
 import styles from '../orders.module.css';
 
 interface Props {
@@ -110,11 +111,11 @@ export default function AdminOrderDetailPage({ params }: Props) {
         }),
       });
       if (res.ok) {
-        alert('Order status updated');
+        toast.success('Order status updated');
         fetchOrder();
       }
     } catch {
-      alert('Failed to update status');
+      toast.error('Failed to update status');
     }
   };
 
@@ -130,11 +131,11 @@ export default function AdminOrderDetailPage({ params }: Props) {
         }),
       });
       if (res.ok) {
-        alert('Courier information updated');
+        toast.success('Courier information updated');
         fetchOrder();
       }
     } catch {
-      alert('Failed to update courier tracking');
+      toast.error('Failed to update courier tracking');
     }
   };
 
@@ -146,17 +147,17 @@ export default function AdminOrderDetailPage({ params }: Props) {
         body: JSON.stringify({ returnStatus: status }),
       });
       if (res.ok) {
-        alert(`Return marked as ${status}`);
+        toast.success(`Return marked as ${status}`);
         fetchOrder();
       }
     } catch {
-      alert('Failed to update return status');
+      toast.error('Failed to update return status');
     }
   };
 
   const handleProcessRefund = async () => {
     if (!refundAmount || Number(refundAmount) <= 0) {
-      alert('Please enter a valid refund amount');
+      toast.error('Please enter a valid refund amount');
       return;
     }
 
@@ -171,11 +172,11 @@ export default function AdminOrderDetailPage({ params }: Props) {
         }),
       });
       if (res.ok) {
-        alert('Refund recorded successfully');
+        toast.success('Refund recorded successfully');
         fetchOrder();
       }
     } catch {
-      alert('Failed to record refund');
+      toast.error('Failed to record refund');
     }
   };
 
