@@ -11,6 +11,25 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+html.intro-pending {
+  overflow: hidden;
+  background-color: var(--color-forest-deep);
+}
+
+html.intro-pending body {
+  overflow: hidden;
+  background-color: var(--color-forest-deep);
+}
+
+html.intro-pending #main-content,
+html.intro-pending header,
+html.intro-pending footer,
+html.intro-pending nav {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 body {
   font-family: var(--font-body);
   font-size: var(--text-body);
