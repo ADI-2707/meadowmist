@@ -8,3 +8,4 @@ Fix initial home page flash before welcome animation:
 - Render static backdrop and synchronize intro-pending state removal with zoom animation stage
 - Support instantaneous render for returning visitors and users with prefers-reduced-motion
 - Add comprehensive unit test coverage for IntroLoader lifecycle and dismissal
+
