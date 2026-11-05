@@ -60,6 +60,18 @@
   z-index: 2;
 }
 
+.staticBackdrop {
+  display: none;
+}
+
+:global(html.intro-pending) .staticBackdrop {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background-color: var(--color-forest-deep);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .overlay {
     display: none;

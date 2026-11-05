@@ -60,7 +60,14 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${fraunces.variable} ${jost.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`${fraunces.variable} ${jost.variable}`}>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{if(!sessionStorage.getItem('meadow_mist_intro_seen')&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches){document.documentElement.classList.add('intro-pending');setTimeout(function(){document.documentElement.classList.remove('intro-pending');},3500);}}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body>
         <PostHogProvider>
           <ToastProvider />

@@ -1,46 +1,57 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import Image from 'next/image';
 import styles from './IntroLoader.module.css';
 
 export default function IntroLoader() {
-  const [show, setShow] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [stage, setStage] = useState<'appear' | 'zoom' | 'done'>('appear');
   const prefersReduced = useReducedMotion();
 
   useEffect(() => {
-    const hasSeen = sessionStorage.getItem('meadow_mist_intro_seen');
+    let hasSeen = false;
+    try {
+      hasSeen = !!sessionStorage.getItem('meadow_mist_intro_seen');
+    } catch {}
+
     if (hasSeen || prefersReduced) {
+      document.documentElement.classList.remove('intro-pending');
+      setStage('done');
       return;
     }
 
-    const timerStart = setTimeout(() => {
-      setShow(true);
-      document.body.style.overflow = 'hidden';
-    }, 0);
+    setMounted(true);
+    document.body.style.overflow = 'hidden';
 
     const timer1 = setTimeout(() => {
       setStage('zoom');
+      document.documentElement.classList.remove('intro-pending');
     }, 1600);
 
     const timer2 = setTimeout(() => {
       setStage('done');
-      setShow(false);
-      sessionStorage.setItem('meadow_mist_intro_seen', 'true');
+      try {
+        sessionStorage.setItem('meadow_mist_intro_seen', 'true');
+      } catch {}
       document.body.style.overflow = '';
+      document.documentElement.classList.remove('intro-pending');
     }, 2800);
 
     return () => {
-      clearTimeout(timerStart);
       clearTimeout(timer1);
       clearTimeout(timer2);
       document.body.style.overflow = '';
+      document.documentElement.classList.remove('intro-pending');
     };
   }, [prefersReduced]);
 
-  if (!show || stage === 'done') return null;
+  if (stage === 'done') return null;
+
+  if (!mounted) {
+    return <div className={styles.staticBackdrop} aria-hidden="true" />;
+  }
 
   return (
     <AnimatePresence>
@@ -52,14 +63,15 @@ export default function IntroLoader() {
         transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
         onClick={() => {
           setStage('done');
-          setShow(false);
+          try {
+            sessionStorage.setItem('meadow_mist_intro_seen', 'true');
+          } catch {}
           document.body.style.overflow = '';
+          document.documentElement.classList.remove('intro-pending');
         }}
       >
-        
         <div className={styles.glow} aria-hidden="true" />
 
-        
         <motion.div
           className={styles.logoContainer}
           initial={{ scale: 0.7, opacity: 0, y: 12 }}
@@ -84,7 +96,6 @@ export default function IntroLoader() {
           />
         </motion.div>
 
-        
         <motion.p
           className={styles.tagline}
           initial={{ opacity: 0, y: 10 }}
